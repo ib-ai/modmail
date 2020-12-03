@@ -21,6 +21,9 @@ package com.ibdiscord;
 
 import com.ibdiscord.data.LocalConfig;
 import com.ibdiscord.data.db.DataContainer;
+import com.ibdiscord.listeners.MessageListener;
+import com.ibdiscord.listeners.ReactionListener;
+import com.ibdiscord.listeners.ShutdownListener;
 import lombok.Getter;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -65,6 +68,10 @@ public enum Modmail {
                     GatewayIntent.GUILD_MEMBERS
                     )
                     .setMemberCachePolicy(MemberCachePolicy.ALL)
+                    .addEventListeners(new ShutdownListener(),
+                            new MessageListener(),
+                            new ReactionListener()
+                    )
                     .build();
             jda.setAutoReconnect(true);
             jda.awaitReady();
