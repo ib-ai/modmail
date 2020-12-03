@@ -26,6 +26,9 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import net.dv8tion.jda.api.utils.cache.CacheFlag;
+
+import java.util.Arrays;
 
 import javax.security.auth.login.LoginException;
 
@@ -64,6 +67,7 @@ public enum Modmail {
                     GatewayIntent.GUILD_MESSAGE_REACTIONS,
                     GatewayIntent.GUILD_MEMBERS
                     )
+                    .disableCache(Arrays.asList(CacheFlag.values()))
                     .setMemberCachePolicy(MemberCachePolicy.ALL)
                     .build();
             jda.setAutoReconnect(true);
