@@ -25,6 +25,7 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public enum DataContainer {
@@ -55,6 +56,8 @@ public enum DataContainer {
         dbConfig.setLeakDetectionThreshold(2500);
 
         ds = new HikariDataSource(dbConfig);
+
+        initialize();
     }
 
     /**
@@ -77,6 +80,44 @@ public enum DataContainer {
         }
 
         return ds.getConnection();
+    }
+
+    /**
+     * Initialize the Database.
+     */
+    private void initialize() {
+        try (Connection con = getConnection()) {
+            PreparedStatement pst = con.prepareStatement("CREATE TABLE IF NOT EXISTS \"mm_tickets\" ( "
+                    + "\"ticket_id\" SERIAL PRIMARY KEY,"
+                    + "\"user\" int,"
+                    + "\"open\" boolean,"
+                    + "\"timeout\" timestamp"
+                    + ");"
+            );
+            pst.execute();
+
+            pst = con.prepareStatement("CREATE INDEX IF NOT EXISTS \"mm_tickets_user\" ON \"mm_tickets\" (\"user\")");
+            pst.execute();
+
+            pst = con.prepareStatement("CREATE TABLE IF NOT EXISTS \"mm_ticket_response\" ("
+                    + "  \"response_id\" SERIAL PRIMARY KEY,"
+                    + "  \"ticket_id\" int REFERENCES \"mm_tickets\","
+                    + "  \"user\" int,"
+                    + "  \"response\" text,"
+                    + "  \"timestamp\" timestamp,"
+                    + "  \"as_server\" boolean"
+                    + ");"
+            );
+            pst.execute();
+
+            pst = con.prepareStatement("CREATE INDEX IF NOT EXISTS \"mm_ticket_response_ticket_id\" ON \"mm_ticket_response\" (\"ticket_id\")");
+            pst.execute();
+
+            pst = con.prepareStatement("CREATE INDEX IF NOT EXISTS \"mm_ticket_response_user\" ON \"mm_ticket_response\" (\"user\")");
+            pst.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
 }
