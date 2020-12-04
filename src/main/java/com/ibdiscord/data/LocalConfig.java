@@ -33,6 +33,8 @@ public final class LocalConfig {
 
     @Getter private final String dbName;
 
+    @Getter private final String channelId;
+
     /**
      * Constructor for the local configuration object.
      * Sets all of the class properties to their corresponding environment
@@ -45,6 +47,8 @@ public final class LocalConfig {
         this.dbName = getEnvironment("DATABASE_NAME", "");
         this.dbUsername = getEnvironment("DATABASE_USERNAME", "");
         this.dbPassword = getEnvironment("DATABASE_PASSWORD", "");
+
+        this.channelId = getEnvironment("CHANNEL_ID", "");
     }
 
     /**
