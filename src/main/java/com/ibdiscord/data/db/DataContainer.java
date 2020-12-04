@@ -89,9 +89,10 @@ public enum DataContainer {
         try (Connection con = getConnection()) {
             PreparedStatement pst = con.prepareStatement("CREATE TABLE IF NOT EXISTS \"mm_tickets\" ( "
                     + "\"ticket_id\" SERIAL PRIMARY KEY,"
-                    + "\"user\" int,"
-                    + "\"open\" boolean,"
-                    + "\"timeout\" timestamp"
+                    + "\"user\" bigint NOT NULL,"
+                    + "\"open\" boolean DEFAULT TRUE NOT NULL,"
+                    + "\"timeout\" timestamp NULL,"
+                    + "\"message_id\" bigint NOT NULL"
                     + ");"
             );
             pst.execute();
@@ -102,7 +103,7 @@ public enum DataContainer {
             pst = con.prepareStatement("CREATE TABLE IF NOT EXISTS \"mm_ticket_response\" ("
                     + "  \"response_id\" SERIAL PRIMARY KEY,"
                     + "  \"ticket_id\" int REFERENCES \"mm_tickets\","
-                    + "  \"user\" int,"
+                    + "  \"user\" bigint,"
                     + "  \"response\" text,"
                     + "  \"timestamp\" timestamp,"
                     + "  \"as_server\" boolean"
