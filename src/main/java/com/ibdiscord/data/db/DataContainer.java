@@ -91,8 +91,8 @@ public enum DataContainer {
                     + "\"ticket_id\" SERIAL PRIMARY KEY,"
                     + "\"user\" bigint NOT NULL,"
                     + "\"open\" boolean DEFAULT TRUE NOT NULL,"
-                    + "\"timeout\" timestamp NULL,"
-                    + "\"message_id\" bigint NOT NULL"
+                    + "\"timeout\" timestamp DEFAULT Now()"
+                    + "\"message_id\" bigint"
                     + ");"
             );
             pst.execute();
@@ -100,21 +100,21 @@ public enum DataContainer {
             pst = con.prepareStatement("CREATE INDEX IF NOT EXISTS \"mm_tickets_user\" ON \"mm_tickets\" (\"user\")");
             pst.execute();
 
-            pst = con.prepareStatement("CREATE TABLE IF NOT EXISTS \"mm_ticket_response\" ("
+            pst = con.prepareStatement("CREATE TABLE IF NOT EXISTS \"mm_ticket_responses\" ("
                     + "  \"response_id\" SERIAL PRIMARY KEY,"
                     + "  \"ticket_id\" int REFERENCES \"mm_tickets\","
-                    + "  \"user\" bigint,"
-                    + "  \"response\" text,"
-                    + "  \"timestamp\" timestamp,"
-                    + "  \"as_server\" boolean"
+                    + "  \"user\" bigint NOT NULL,"
+                    + "  \"response\" text NOT NULL,"
+                    + "  \"timestamp\" timestamp DEFAULT Now(),"
+                    + "  \"as_server\" boolean NOT NULL"
                     + ");"
             );
             pst.execute();
 
-            pst = con.prepareStatement("CREATE INDEX IF NOT EXISTS \"mm_ticket_response_ticket_id\" ON \"mm_ticket_response\" (\"ticket_id\")");
+            pst = con.prepareStatement("CREATE INDEX IF NOT EXISTS \"mm_ticket_responses_ticket_id\" ON \"mm_ticket_responses\" (\"ticket_id\")");
             pst.execute();
 
-            pst = con.prepareStatement("CREATE INDEX IF NOT EXISTS \"mm_ticket_response_user\" ON \"mm_ticket_response\" (\"user\")");
+            pst = con.prepareStatement("CREATE INDEX IF NOT EXISTS \"mm_ticket_responses_user\" ON \"mm_ticket_responses\" (\"user\")");
             pst.execute();
         } catch (SQLException e) {
             e.printStackTrace();
