@@ -1,4 +1,4 @@
-/* Copyright 2020 Ray Clark <raynichclark@gmail.com>
+/* Copyright 2020-2021 Ray Clark <raynichclark@gmail.com>
  *
  * This file is part of Modmail.
  *
@@ -19,7 +19,9 @@
 
 package com.ibdiscord.listeners;
 
+import com.ibdiscord.Modmail;
 import com.ibdiscord.data.db.DataContainer;
+import com.ibdiscord.waiter.Waiter;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -28,44 +30,66 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+
+import java.time.LocalDateTime;
 
 public class MessageListener extends ListenerAdapter {
 
     @Override
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
+        if (event.getChannel().getId() != Modmail.INSTANCE.getConfig().getChannelId()) {
+            return;
+        }
 
+        Waiter.INSTANCE.input(event.getMember(), event.getMessage().getContentRaw());
     }
 
     @Override
     public void onPrivateMessageReceived(PrivateMessageReceivedEvent event) {
         try (Connection con = DataContainer.INSTANCE.getConnection()) {
             long userID = event.getAuthor().getIdLong();
-            PreparedStatement pst = con.prepareStatement("SELECT \"ticket_id\" FROM \"mm_tickets\" WHERE \"user\"=? AND \"open\"=TRUE");
+            PreparedStatement pst = con.prepareStatement("SELECT \"ticket_id\", \"timeout\" FROM \"mm_tickets\" WHERE \"user\"=? AND \"open\"=TRUE;");
             pst.setLong(1, userID);
             ResultSet result = pst.executeQuery();
 
-            long ticketId;
-
-            if (!result.next()) {
+            if (result.next()) {
+                //TODO: Make timeouts persist if ticket is closed?
+                Timestamp timeout = result.getTimestamp("timeout");
+                if (LocalDateTime.now().isBefore(timeout.toLocalDateTime())) {
+                    return;
+                }
+            } else {
                 System.out.println("No open ticket, creating ticket");
-                pst = con.prepareStatement("INSERT INTO \"mm_tickets\" (\"user\", \"message_id\")"
-                        + "VALUES (?, 0)"
-                        + "RETURNING \"ticket_id\""
+                pst = con.prepareStatement("INSERT INTO \"mm_tickets\" (\"user\")"
+                        + "VALUES (?)"
+                        + "RETURNING \"ticket_id\";"
                 );
                 pst.setLong(1, userID);
                 result = pst.executeQuery();
+
                 if (!result.next()) {
                     System.out.println("Could not create new ticket");
                     return;
                 }
             }
 
-            ticketId = result.getLong("ticket_id");
-            event.getMessage().addReaction("U+1F4E8").queue();
+            int ticketId = result.getInt("ticket_id");
             System.out.println(ticketId);
+
+            pst = con.prepareStatement("INSERT INTO \"mm_ticket_responses\" (\"ticket_id\", \"user\", \"response\", \"as_server\")"
+                    + "VALUES (?, ?, ?, FALSE)"
+            );
+            pst.setInt(1, ticketId);
+            pst.setLong(2, userID);
+            pst.setString(3, event.getMessage().getContentRaw());
+            pst.execute();
+
+            event.getMessage().addReaction("U+1F4E8").queue();
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
     }
+
+
 }
