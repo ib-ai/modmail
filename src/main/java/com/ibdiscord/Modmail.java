@@ -1,4 +1,4 @@
-/* Copyright 2020 Ray Clark <raynichclark@gmail.com>
+/* Copyright 2020-2021 Ray Clark <raynichclark@gmail.com>
  *
  * This file is part of Modmail.
  *
