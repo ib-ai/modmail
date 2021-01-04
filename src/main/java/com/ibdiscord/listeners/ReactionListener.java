@@ -1,4 +1,4 @@
-/* Copyright 2020 Ray Clark <raynichclark@gmail.com>
+/* Copyright 2020-2021 Ray Clark <raynichclark@gmail.com>
  *
  * This file is part of Modmail.
  *
@@ -19,13 +19,83 @@
 
 package com.ibdiscord.listeners;
 
-import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
+import com.ibdiscord.Modmail;
+import com.ibdiscord.data.db.DataContainer;
+import com.ibdiscord.utils.UEmoji;
+import com.ibdiscord.waiter.Waiter;
+import com.ibdiscord.waiter.handlers.TicketCloseHandler;
+import com.ibdiscord.waiter.handlers.TicketReplyHandler;
+import com.ibdiscord.waiter.handlers.TicketTimoutHandler;
+import com.ibdiscord.waiter.handlers.WaitHandler;
+import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class ReactionListener extends ListenerAdapter {
 
     @Override
-    public void onMessageReactionAdd(MessageReactionAddEvent event) {
+    public void onGuildMessageReactionAdd(GuildMessageReactionAddEvent event) {
+        if (event.getChannel().getId() != Modmail.INSTANCE.getConfig().getChannelId()) {
+            System.out.println("Not in channel");
+            return;
+        }
 
+        if (!event.getReactionEmote().isEmoji()) {
+            System.out.println("Not Emoji");
+            return;
+        }
+
+        String emoji = event.getReactionEmote().getEmoji();
+        /*
+        if (emoji != UEmoji.CLOSE_TICKET_EMOJI && emoji != UEmoji.REPLY_TICKET_EMOJI && emoji != UEmoji.TIMEOUT_TICKET_EMOJI) {
+            System.out.println("Not Correct Emoji");
+            return;
+        }
+         */
+
+        try (Connection con = DataContainer.INSTANCE.getConnection()) {
+            long messageId = event.getMessageIdLong();
+            PreparedStatement pst = con.prepareStatement("SELECT \"ticket_id\" from mm_tickets WHERE \"message_id\"=?");
+            pst.setLong(1, messageId);
+            ResultSet result = pst.executeQuery();
+            if (result.next()) {
+                long ticketID = result.getLong("ticket_id");
+                WaitHandler handler = null;
+                switch (emoji) {
+                    case UEmoji.CLOSE_TICKET_EMOJI:
+                        handler = new TicketCloseHandler(event.getMember(), ticketID);
+                        break;
+
+                    case UEmoji.REPLY_TICKET_EMOJI:
+                        handler = new TicketReplyHandler(event.getMember(), ticketID);
+                        break;
+
+                    case UEmoji.TIMEOUT_TICKET_EMOJI:
+                        handler = new TicketTimoutHandler(event.getMember(), ticketID);
+                        break;
+
+                    default:
+                        return;
+                }
+
+                if (!Waiter.INSTANCE.create(event.getMember(), 5 * 60, handler)) {
+                    //TODO: Failed to create message
+                }
+            } else {
+                if (Waiter.INSTANCE.hasTask(event.getMember())) {
+                    if (emoji == UEmoji.NO_CONFIRMATION_EMOJI) {
+                        Waiter.INSTANCE.cancel(event.getMember());
+                    } else {
+                        Waiter.INSTANCE.react(event.getMember(), emoji);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }
