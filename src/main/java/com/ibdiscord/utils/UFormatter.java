@@ -1,4 +1,4 @@
-/* Copyright 2020 Ray Clark <raynichclark@gmail.com>
+/* Copyright 2020-2021 Ray Clark <raynichclark@gmail.com>
  *
  * This file is part of Modmail.
  *
@@ -73,6 +73,59 @@ public final class UFormatter {
                     false
             );
         }
+
+        return builder.build();
+    }
+
+    /**
+     * Formats a closed ticket as an embed.
+     * @param closer The member who closed the ticket.
+     * @param ticketMember The member who's ticket was closed.
+     * @return Message Embed
+     */
+    public static MessageEmbed closedTicket(Member closer, Member ticketMember) {
+        EmbedBuilder builder = new EmbedBuilder();
+
+        builder.setDescription(String.format("**%s** closed the ModMail conversation for **%s**", formatMember(closer.getUser()), formatMember(ticketMember.getUser())));
+
+        return builder.build();
+    }
+
+    /**
+     * Formats a close confirmation embed.
+     * @param ticketMember The member who's ticket is to be closed.
+     * @return Close Confirmation Embed
+     */
+    public static MessageEmbed closeConfirmation(Member ticketMember) {
+        EmbedBuilder builder = new EmbedBuilder();
+
+        builder.setDescription(String.format("Do you want to close the ModMail conversation for **%s**", formatMember(ticketMember.getUser())));
+
+        return builder.build();
+    }
+
+    /**
+     * Formats a reply confirmation embed.
+     * @param ticketMember The member who's ticket is to be closed.
+     * @return Reply Confirmation Embed
+     */
+    public static MessageEmbed replyConfirmation(Member ticketMember) {
+        EmbedBuilder builder = new EmbedBuilder();
+
+        builder.setDescription(String.format("Replying to ModMail conversation for **%s**", formatMember(ticketMember.getUser())));
+
+        return builder.build();
+    }
+
+    /**
+     * Formats a timeout confirmation embed.
+     * @param ticketMember The member who is to be timedout.
+     * @return Timeout Confirmation Embed
+     */
+    public static MessageEmbed timeoutConfirmation(Member ticketMember) {
+        EmbedBuilder builder = new EmbedBuilder();
+
+        builder.setDescription(String.format("Do you want to timeout **%s** for 24 hours?", formatMember(ticketMember.getUser())));
 
         return builder.build();
     }
