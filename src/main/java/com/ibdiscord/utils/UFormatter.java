@@ -48,27 +48,26 @@ public final class UFormatter {
 
     /**
      * Formats a ticket as an embed.
-     * @param guild Guild the bot belongs to
      * @param ticket Ticket
      * @return Message Embed
      */
-    public static MessageEmbed ticketEmbed(Guild guild, Ticket ticket) {
+    public static MessageEmbed ticketEmbed(Ticket ticket) {
         EmbedBuilder builder = new EmbedBuilder();
 
         Member ticketMember = ticket.getMember();
 
         builder.setTitle(String.format("ModMail Conversation for %s", formatMember(ticketMember.getUser())));
         builder.setDescription(String.format("User %s has **%d** roles\n", ticketMember.getAsMention(), ticketMember.getRoles().size())
-                + String.format("Joined Discord: **%s**", ticketMember.getTimeJoined().format(DateTimeFormatter.RFC_1123_DATE_TIME))
-                + String.format("Joined %s: **%s**", ticketMember.getTimeCreated().format(DateTimeFormatter.RFC_1123_DATE_TIME))
+                + String.format("Joined Discord: **%s**\n", ticketMember.getTimeCreated().format(DateTimeFormatter.ofPattern("MMM dd yyyy")))
+                + String.format("Joined Server: **%s**", ticketMember.getTimeJoined().format(DateTimeFormatter.ofPattern("MMM dd yyyy")))
         );
 
         for (TicketResponse response : ticket.getResponses()) {
-            String messenger = formatMember(response.getUser());
-            if (response.getUser().getIdLong() == ticketMember.getIdLong()) {
+            String messenger = formatMember(response.getMember().getUser());
+            if (response.getMember().getIdLong() == ticketMember.getIdLong()) {
                 messenger = "user";
             }
-            builder.addField(String.format("On %s, %s wrote", response.getTimestamp().format(DateTimeFormatter.RFC_1123_DATE_TIME), messenger),
+            builder.addField(String.format("On %s, %s wrote", response.getTimestamp().toLocalDateTime().format(DateTimeFormatter.ofPattern("MMM dd yyyy HH:mm:ss")), messenger),
                     response.getResponse(),
                     false
             );
