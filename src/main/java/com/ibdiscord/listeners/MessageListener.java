@@ -102,7 +102,7 @@ public class MessageListener extends ListenerAdapter {
                 result = pst.executeQuery();
 
                 if (!result.next()) {
-                    //TODO: Log failure to create new ticket
+                    Modmail.INSTANCE.getLogger().error("Failed to create new ticket for %d.", userID);
                     return;
                 }
             }
@@ -118,7 +118,8 @@ public class MessageListener extends ListenerAdapter {
             pst.setLong(2, userID);
             pst.setString(3, event.getMessage().getContentRaw());
             if (pst.executeUpdate() == 0) {
-                //TODO: Log failure to insert new response
+                Modmail.INSTANCE.getLogger().error("Failed to insert new response from %d.", userID);
+                return;
             }
 
             //Remove old ticket message and send new one
@@ -140,10 +141,10 @@ public class MessageListener extends ListenerAdapter {
                 pst.setLong(1, message.getIdLong());
                 pst.setLong(2, ticketId);
                 if (pst.executeUpdate() == 0) {
-                    //TODO: Log failure to update ticket's message id
+                    Modmail.INSTANCE.getLogger().error("Failed to set new message id for ticket %d", ticketId);
                 }
             } else {
-                //TODO: Log failure to send new ticket.
+                Modmail.INSTANCE.getLogger().error("Failed to send ticket message for ticket %d", ticketId);
                 event.getChannel().sendMessage("Sorry, we encountered an error and your message wasn't sent through. Please try again.");
             }
         } catch (SQLException e) {
