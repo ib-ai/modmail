@@ -76,7 +76,7 @@ public enum Waiter {
     public void input(Member member, String input) {
         WaitTask task = tasks.get(member);
         if (task == null) {
-            //TODO: Log
+            //TODO: Log null task
             return;
         }
         if (task.getHandler().onInput(input)) {
@@ -92,7 +92,7 @@ public enum Waiter {
     public void react(Member member, String emoji) {
         WaitTask task = tasks.get(member);
         if (task == null) {
-            //TODO: Log
+            //TODO: Log null task
             return;
         }
         if (task.getHandler().onReact(emoji)) {
@@ -107,7 +107,7 @@ public enum Waiter {
     public void cancel(Member member) {
         WaitTask task = tasks.get(member);
         if (task == null)   {
-            //TODO: Log
+            //TODO: Log null task
             return;
         }
         handleEnd(member, task, true);
