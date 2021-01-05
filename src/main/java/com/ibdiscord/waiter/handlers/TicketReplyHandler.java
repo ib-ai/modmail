@@ -22,11 +22,14 @@ package com.ibdiscord.waiter.handlers;
 import com.ibdiscord.data.db.DataContainer;
 import com.ibdiscord.utils.UEmoji;
 import com.ibdiscord.utils.UFormatter;
+import com.ibdiscord.utils.objects.Ticket;
+import com.ibdiscord.utils.objects.TicketResponse;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class TicketReplyHandler extends TicketHandler {
@@ -43,7 +46,10 @@ public class TicketReplyHandler extends TicketHandler {
     @Override
     public void onCreate() {
         getModmailChannel().sendMessage(UFormatter.replyConfirmation(getTicketMember())).queue(
-            success -> success.addReaction(UEmoji.NO_CONFIRMATION_EMOJI).queue(),
+            success -> {
+                success.addReaction(UEmoji.NO_CONFIRMATION_EMOJI).queue();
+                setMessageID(success.getIdLong());
+            },
             failure -> {
 
             });
@@ -51,8 +57,10 @@ public class TicketReplyHandler extends TicketHandler {
 
     @Override
     public boolean onInput(String input) {
+        System.out.println(input);
         input = input.trim();
         if (input.isEmpty()) {
+            System.out.println("Empty");
             return false;
         }
 
@@ -61,21 +69,45 @@ public class TicketReplyHandler extends TicketHandler {
                     + "VALUES (?, ?, ?, TRUE)"
             );
             pst.setLong(1, getTicketID());
-            pst.setLong(2, getMember().getUser().getIdLong());
+            pst.setLong(2, getMember().getIdLong());
             pst.setString(3, input);
 
-            if (!pst.execute()) {
+            if (pst.executeUpdate() == 0) {
+                System.out.println("Insert fail");
                 return false;
             }
 
             MessageEmbed replyMessage = UFormatter.replyMessage(getGuild(), input);
             getTicketMember().getUser().openPrivateChannel().queue(privateChannel ->
-                privateChannel.sendMessage(replyMessage)
+                privateChannel.sendMessage(replyMessage).queue()
             );
 
             this.onTimeout();
 
-            //TODO: Remove old ticket, send new one
+            pst = con.prepareStatement("SELECT \"message_id\" FROM \"mm_tickets\" WHERE \"ticket_id\"=?");
+            pst.setLong(1, getTicketID());
+            ResultSet result = pst.executeQuery();
+            if (result.next()) {
+                Ticket ticket = new Ticket(getTicketMember());
+
+                pst = con.prepareStatement("SELECT \"user\", \"response\", \"timestamp\" FROM \"mm_ticket_responses\" WHERE \"ticket_id\"=? ORDER BY \"response_id\" ASC");
+                pst.setLong(1, getTicketID());
+                ResultSet results = pst.executeQuery();
+                while (results.next()) {
+                    ticket.addResponse(new TicketResponse(getGuild().getMemberById(results.getLong("user")),
+                            results.getString("response"),
+                            results.getTimestamp("timestamp")));
+                }
+
+                MessageEmbed ticketEmbed = UFormatter.ticketEmbed(ticket);
+                getModmailChannel().retrieveMessageById(result.getLong("message_id")).queue(
+                    success -> success.editMessage(ticketEmbed).queue(),
+                    failure -> {
+                        //TODO:
+                    });
+            }
+
+            //TODO: Remove user message
 
             return true;
         } catch (SQLException e) {
