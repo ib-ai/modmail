@@ -78,12 +78,12 @@ public class TicketTimoutHandler extends TicketHandler {
                     getTicketMember().getUser().openPrivateChannel().queue(
                         success -> {
                             success.sendMessage(UFormatter.timeoutMessage(timeout)).queue(
-                                    success1 -> {
-                                        //Do nothing
-                                    },
-                                    failure -> {
-                                        //TODO: Log failure to send timeout message
-                                    });
+                                success1 -> {
+                                    //Do nothing
+                                },
+                                failure -> {
+                                    //TODO: Log failure to send timeout message
+                                });
                         },
                         failure -> {
                             //TODO: Log failure to open private channel
