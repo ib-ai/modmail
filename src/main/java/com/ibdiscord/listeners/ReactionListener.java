@@ -34,12 +34,17 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Objects;
 
 public class ReactionListener extends ListenerAdapter {
 
     @Override
     public void onGuildMessageReactionAdd(GuildMessageReactionAddEvent event) {
-        if (event.getChannel().getId() != Modmail.INSTANCE.getConfig().getChannelId()) {
+        if (event.getUser().isBot()) {
+            return;
+        }
+
+        if (!Objects.equals(event.getChannel().getId(), Modmail.INSTANCE.getConfig().getChannelId())) {
             System.out.println("Not in channel");
             return;
         }
@@ -49,7 +54,7 @@ public class ReactionListener extends ListenerAdapter {
             return;
         }
 
-        String emoji = event.getReactionEmote().getEmoji();
+        String emoji = event.getReactionEmote().getAsCodepoints().toUpperCase();
         /*
         if (emoji != UEmoji.CLOSE_TICKET_EMOJI && emoji != UEmoji.REPLY_TICKET_EMOJI && emoji != UEmoji.TIMEOUT_TICKET_EMOJI) {
             System.out.println("Not Correct Emoji");
@@ -59,12 +64,15 @@ public class ReactionListener extends ListenerAdapter {
 
         try (Connection con = DataContainer.INSTANCE.getConnection()) {
             long messageId = event.getMessageIdLong();
-            PreparedStatement pst = con.prepareStatement("SELECT \"ticket_id\" from mm_tickets WHERE \"message_id\"=?");
+            PreparedStatement pst = con.prepareStatement("SELECT \"ticket_id\" from mm_tickets WHERE \"message_id\"=? AND \"open\"=TRUE");
             pst.setLong(1, messageId);
             ResultSet result = pst.executeQuery();
             if (result.next()) {
                 long ticketID = result.getLong("ticket_id");
-                WaitHandler handler = null;
+                System.out.println(ticketID);
+                WaitHandler handler;
+                System.out.println(emoji);
+                System.out.println(UEmoji.REPLY_TICKET_EMOJI);
                 switch (emoji) {
                     case UEmoji.CLOSE_TICKET_EMOJI:
                         handler = new TicketCloseHandler(event.getMember(), ticketID);
@@ -79,6 +87,7 @@ public class ReactionListener extends ListenerAdapter {
                         break;
 
                     default:
+                        System.out.println("No handler");
                         return;
                 }
 
@@ -87,7 +96,7 @@ public class ReactionListener extends ListenerAdapter {
                 }
             } else {
                 if (Waiter.INSTANCE.hasTask(event.getMember())) {
-                    if (emoji == UEmoji.NO_CONFIRMATION_EMOJI) {
+                    if (emoji.equalsIgnoreCase(UEmoji.NO_CONFIRMATION_EMOJI)) {
                         Waiter.INSTANCE.cancel(event.getMember());
                     } else {
                         Waiter.INSTANCE.react(event.getMember(), emoji);
@@ -97,5 +106,7 @@ public class ReactionListener extends ListenerAdapter {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
+        event.getReaction().removeReaction(event.getUser()).queue();
     }
 }
