@@ -32,6 +32,8 @@ import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.security.auth.login.LoginException;
 
@@ -43,6 +45,8 @@ public enum Modmail {
     INSTANCE;
 
     @Getter private LocalConfig config;
+    @Getter private Logger logger = LoggerFactory.getLogger(getClass());
+
     @Getter private JDA jda;
     @Getter private TextChannel modmailChannel;
     @Getter private Guild guild;
@@ -84,12 +88,14 @@ public enum Modmail {
 
             guild = jda.getGuildById(config.getGuildId());
             if (guild == null) {
+                logger.error("Failed to get guild from provided ID.");
                 jda.shutdownNow();
                 return;
             }
 
             modmailChannel = guild.getTextChannelById(config.getChannelId());
             if (modmailChannel == null) {
+                logger.error("Failed to get Modmail text channel from provided ID.");
                 jda.shutdownNow();
                 return;
             }
