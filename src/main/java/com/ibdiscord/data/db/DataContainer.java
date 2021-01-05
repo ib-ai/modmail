@@ -91,7 +91,7 @@ public enum DataContainer {
                     + "\"ticket_id\" SERIAL PRIMARY KEY,"
                     + "\"user\" bigint NOT NULL,"
                     + "\"open\" boolean DEFAULT TRUE NOT NULL,"
-                    + "\"timeout\" timestamp DEFAULT Now()"
+                    + "\"timeout\" timestamp DEFAULT Now(),"
                     + "\"message_id\" bigint"
                     + ");"
             );
