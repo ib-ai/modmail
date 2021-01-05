@@ -33,7 +33,7 @@ public final class LocalConfig {
 
     @Getter private final String dbName;
 
-    @Getter private final String guildID;
+    @Getter private final String guildId;
 
     @Getter private final String channelId;
 
@@ -50,7 +50,7 @@ public final class LocalConfig {
         this.dbUsername = getEnvironment("DATABASE_USERNAME", "");
         this.dbPassword = getEnvironment("DATABASE_PASSWORD", "");
 
-        this.guildID = getEnvironment("GUILD_ID", "");
+        this.guildId = getEnvironment("GUILD_ID", "");
         this.channelId = getEnvironment("CHANNEL_ID", "");
     }
 

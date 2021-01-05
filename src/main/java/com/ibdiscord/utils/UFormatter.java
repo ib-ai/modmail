@@ -19,10 +19,10 @@
 
 package com.ibdiscord.utils;
 
+import com.ibdiscord.Modmail;
 import com.ibdiscord.utils.objects.Ticket;
 import com.ibdiscord.utils.objects.TicketResponse;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
@@ -33,14 +33,13 @@ public final class UFormatter {
 
     /**
      * Format a response for user DMs.
-     * @param guild Guild the bot belongs to
      * @param message Message response
      * @return Message Embed
      */
-    public static MessageEmbed replyMessage(Guild guild, String message) {
+    public static MessageEmbed replyMessage(String message) {
         EmbedBuilder builder = new EmbedBuilder();
 
-        builder.setTitle(String.format("New Mail from %s", guild.getName()));
+        builder.setTitle(String.format("New Mail from %s", Modmail.INSTANCE.getGuild().getName()));
         builder.setDescription(message);
 
         return builder.build();

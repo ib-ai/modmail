@@ -45,22 +45,14 @@ public class ReactionListener extends ListenerAdapter {
         }
 
         if (!Objects.equals(event.getChannel().getId(), Modmail.INSTANCE.getConfig().getChannelId())) {
-            System.out.println("Not in channel");
             return;
         }
 
         if (!event.getReactionEmote().isEmoji()) {
-            System.out.println("Not Emoji");
             return;
         }
 
         String emoji = event.getReactionEmote().getAsCodepoints().toUpperCase();
-        /*
-        if (emoji != UEmoji.CLOSE_TICKET_EMOJI && emoji != UEmoji.REPLY_TICKET_EMOJI && emoji != UEmoji.TIMEOUT_TICKET_EMOJI) {
-            System.out.println("Not Correct Emoji");
-            return;
-        }
-         */
 
         try (Connection con = DataContainer.INSTANCE.getConnection()) {
             long messageId = event.getMessageIdLong();
@@ -69,10 +61,7 @@ public class ReactionListener extends ListenerAdapter {
             ResultSet result = pst.executeQuery();
             if (result.next()) {
                 long ticketID = result.getLong("ticket_id");
-                System.out.println(ticketID);
                 WaitHandler handler;
-                System.out.println(emoji);
-                System.out.println(UEmoji.REPLY_TICKET_EMOJI);
                 switch (emoji) {
                     case UEmoji.CLOSE_TICKET_EMOJI:
                         handler = new TicketCloseHandler(event.getMember(), ticketID);
@@ -87,7 +76,6 @@ public class ReactionListener extends ListenerAdapter {
                         break;
 
                     default:
-                        System.out.println("No handler");
                         return;
                 }
 

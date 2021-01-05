@@ -27,6 +27,8 @@ import com.ibdiscord.listeners.ShutdownListener;
 import lombok.Getter;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
@@ -42,6 +44,8 @@ public enum Modmail {
 
     @Getter private LocalConfig config;
     @Getter private JDA jda;
+    @Getter private TextChannel modmailChannel;
+    @Getter private Guild guild;
 
     /**
      * Entry point of the program.
@@ -77,6 +81,18 @@ public enum Modmail {
                     .build();
             jda.setAutoReconnect(true);
             jda.awaitReady();
+
+            guild = jda.getGuildById(config.getGuildId());
+            if (guild == null) {
+                jda.shutdownNow();
+                return;
+            }
+
+            modmailChannel = guild.getTextChannelById(config.getChannelId());
+            if (modmailChannel == null) {
+                jda.shutdownNow();
+                return;
+            }
         } catch (LoginException | InterruptedException ex) {
             ex.printStackTrace();
         }

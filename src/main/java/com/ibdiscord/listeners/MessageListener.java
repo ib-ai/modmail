@@ -21,7 +21,6 @@ package com.ibdiscord.listeners;
 
 import com.ibdiscord.Modmail;
 import com.ibdiscord.data.db.DataContainer;
-import com.ibdiscord.utils.UChannel;
 import com.ibdiscord.utils.UEmoji;
 import com.ibdiscord.utils.UFormatter;
 import com.ibdiscord.utils.objects.Ticket;
@@ -78,7 +77,6 @@ public class MessageListener extends ListenerAdapter {
                     return;
                 }
             } else {
-                System.out.println("No open ticket, creating ticket");
                 pst = con.prepareStatement("INSERT INTO \"mm_tickets\" (\"user\")"
                         + "VALUES (?)"
                         + "RETURNING \"ticket_id\";"
@@ -87,7 +85,6 @@ public class MessageListener extends ListenerAdapter {
                 result = pst.executeQuery();
 
                 if (!result.next()) {
-                    System.out.println("Could not create new ticket");
                     return;
                 }
             }
@@ -104,7 +101,7 @@ public class MessageListener extends ListenerAdapter {
 
             event.getMessage().addReaction("U+1F4E8").queue();
 
-            Guild guild = event.getJDA().getGuildById(Modmail.INSTANCE.getConfig().getGuildID());
+            Guild guild = Modmail.INSTANCE.getGuild();
 
             Ticket ticket = new Ticket(guild.getMember(event.getAuthor()));
             pst = con.prepareStatement("SELECT \"user\", \"response\", \"timestamp\" FROM \"mm_ticket_responses\" WHERE \"ticket_id\"=? ORDER BY \"response_id\" ASC");
@@ -118,22 +115,19 @@ public class MessageListener extends ListenerAdapter {
             MessageEmbed ticketEmbed = UFormatter.ticketEmbed(ticket);
 
             //TODO: remove old message, if exists
-            TextChannel modmailChannel = UChannel.getModmailChannel(guild);
-            if (modmailChannel != null) {
-                Message message = modmailChannel.sendMessage(ticketEmbed).complete();
-                if (message != null) {
-                    message.addReaction(UEmoji.REPLY_TICKET_EMOJI).queue();
-                    message.addReaction(UEmoji.CLOSE_TICKET_EMOJI).queue();
-                    message.addReaction(UEmoji.TIMEOUT_TICKET_EMOJI).queue();
-                    pst = con.prepareStatement("UPDATE \"mm_tickets\" SET \"message_id\"=? WHERE \"ticket_id\"=?");
-                    pst.setLong(1, message.getIdLong());
-                    pst.setLong(2, ticketId);
-                    if (pst.executeUpdate() > 0) {
-                        //TODO:
-                    }
+            TextChannel modmailChannel = Modmail.INSTANCE.getModmailChannel();
+            Message message = modmailChannel.sendMessage(ticketEmbed).complete();
+            if (message != null) {
+                message.addReaction(UEmoji.REPLY_TICKET_EMOJI).queue();
+                message.addReaction(UEmoji.CLOSE_TICKET_EMOJI).queue();
+                message.addReaction(UEmoji.TIMEOUT_TICKET_EMOJI).queue();
+                pst = con.prepareStatement("UPDATE \"mm_tickets\" SET \"message_id\"=? WHERE \"ticket_id\"=?");
+                pst.setLong(1, message.getIdLong());
+                pst.setLong(2, ticketId);
+                if (pst.executeUpdate() > 0) {
+                    //TODO:
                 }
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
         }

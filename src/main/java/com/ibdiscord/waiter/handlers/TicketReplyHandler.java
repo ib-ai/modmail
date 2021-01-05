@@ -19,6 +19,7 @@
 
 package com.ibdiscord.waiter.handlers;
 
+import com.ibdiscord.Modmail;
 import com.ibdiscord.data.db.DataContainer;
 import com.ibdiscord.utils.UEmoji;
 import com.ibdiscord.utils.UFormatter;
@@ -45,7 +46,7 @@ public class TicketReplyHandler extends TicketHandler {
 
     @Override
     public void onCreate() {
-        getModmailChannel().sendMessage(UFormatter.replyConfirmation(getTicketMember())).queue(
+        Modmail.INSTANCE.getModmailChannel().sendMessage(UFormatter.replyConfirmation(getTicketMember())).queue(
             success -> {
                 success.addReaction(UEmoji.NO_CONFIRMATION_EMOJI).queue();
                 setMessageID(success.getIdLong());
@@ -57,10 +58,8 @@ public class TicketReplyHandler extends TicketHandler {
 
     @Override
     public boolean onInput(String input) {
-        System.out.println(input);
         input = input.trim();
         if (input.isEmpty()) {
-            System.out.println("Empty");
             return false;
         }
 
@@ -73,11 +72,10 @@ public class TicketReplyHandler extends TicketHandler {
             pst.setString(3, input);
 
             if (pst.executeUpdate() == 0) {
-                System.out.println("Insert fail");
                 return false;
             }
 
-            MessageEmbed replyMessage = UFormatter.replyMessage(getGuild(), input);
+            MessageEmbed replyMessage = UFormatter.replyMessage(input);
             getTicketMember().getUser().openPrivateChannel().queue(privateChannel ->
                 privateChannel.sendMessage(replyMessage).queue()
             );
@@ -94,13 +92,13 @@ public class TicketReplyHandler extends TicketHandler {
                 pst.setLong(1, getTicketID());
                 ResultSet results = pst.executeQuery();
                 while (results.next()) {
-                    ticket.addResponse(new TicketResponse(getGuild().getMemberById(results.getLong("user")),
+                    ticket.addResponse(new TicketResponse(Modmail.INSTANCE.getGuild().getMemberById(results.getLong("user")),
                             results.getString("response"),
                             results.getTimestamp("timestamp")));
                 }
 
                 MessageEmbed ticketEmbed = UFormatter.ticketEmbed(ticket);
-                getModmailChannel().retrieveMessageById(result.getLong("message_id")).queue(
+                Modmail.INSTANCE.getModmailChannel().retrieveMessageById(result.getLong("message_id")).queue(
                     success -> success.editMessage(ticketEmbed).queue(),
                     failure -> {
                         //TODO:

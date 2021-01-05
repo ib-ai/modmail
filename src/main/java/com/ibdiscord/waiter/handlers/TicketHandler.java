@@ -19,14 +19,12 @@
 
 package com.ibdiscord.waiter.handlers;
 
+import com.ibdiscord.Modmail;
 import com.ibdiscord.data.db.DataContainer;
-import com.ibdiscord.utils.UChannel;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.TextChannel;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -35,13 +33,10 @@ import java.sql.SQLException;
 
 public abstract class TicketHandler implements WaitHandler {
 
-    @Getter private Guild guild;
-
     @Getter private Member member;
 
     @Getter private long ticketID;
     @Getter private Member ticketMember;
-    @Getter private TextChannel modmailChannel;
 
     @Getter @Setter(value = AccessLevel.PROTECTED)
     private long messageID;
@@ -52,17 +47,15 @@ public abstract class TicketHandler implements WaitHandler {
      * @param ticketID ID of ticket
      */
     public TicketHandler(Member member, long ticketID) {
-        this.guild = member.getGuild();
         this.member = member;
         this.ticketID = ticketID;
-        this.modmailChannel = UChannel.getModmailChannel(guild);
 
         try (Connection con = DataContainer.INSTANCE.getConnection()) {
             PreparedStatement pst = con.prepareStatement("SELECT \"user\" FROM \"mm_tickets\" WHERE \"ticket_id\"=?");
             pst.setLong(1, ticketID);
             ResultSet result = pst.executeQuery();
             if  (result.next()) {
-                ticketMember = guild.getMemberById(result.getLong("user"));
+                ticketMember = Modmail.INSTANCE.getGuild().getMemberById(result.getLong("user"));
             } else {
                 //TODO:
             }
@@ -73,10 +66,7 @@ public abstract class TicketHandler implements WaitHandler {
 
     @Override
     public void onTimeout() {
-        TextChannel channel = UChannel.getModmailChannel(guild);
-        if (channel != null) {
-            channel.retrieveMessageById(messageID).queue(message -> message.delete().queue());
-        }
+        Modmail.INSTANCE.getModmailChannel().retrieveMessageById(messageID).queue(message -> message.delete().queue());
     }
 
 }
