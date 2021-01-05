@@ -1,0 +1,32 @@
+version: '3.4'
+
+services:
+
+  # The Java bot process -- uses Dockerfile in ./docker/
+  # Will attempt to restart 3 times.
+  bot:
+    image: modmail
+    restart: on-failure:3
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    env_file:
+      - bot.env
+    depends_on:
+      - db
+
+  # Postgres database
+  db:
+    restart: always
+    image: postgres
+    container_name: db
+    env_file:
+      - db.env
+    volumes:
+      - db-data:/data
+    ports:
+      - 5432:5432
+
+volumes:
+  # Database persistence
+  db-data:
