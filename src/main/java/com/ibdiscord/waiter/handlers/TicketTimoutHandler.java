@@ -46,6 +46,7 @@ public class TicketTimoutHandler extends TicketHandler {
             success -> {
                 success.addReaction(UEmoji.YES_CONFIRMATION_EMOJI).queue();
                 success.addReaction(UEmoji.NO_CONFIRMATION_EMOJI).queue();
+                setMessageID(success.getIdLong());
             },
             failure -> {
 
@@ -59,7 +60,7 @@ public class TicketTimoutHandler extends TicketHandler {
 
     @Override
     public boolean onReact(String emoji) {
-        if (emoji == UEmoji.YES_CONFIRMATION_EMOJI) {
+        if (emoji.equalsIgnoreCase(UEmoji.YES_CONFIRMATION_EMOJI)) {
             try (Connection con = DataContainer.INSTANCE.getConnection()) {
                 PreparedStatement pst = con.prepareStatement("UPDATE \"mm_tickets\" SET \"timeout\"=? WHERE \"ticket_id\"=?");
                 //TODO: Improve this
