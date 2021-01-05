@@ -57,7 +57,8 @@ public abstract class TicketHandler implements WaitHandler {
             if  (result.next()) {
                 ticketMember = Modmail.INSTANCE.getGuild().getMemberById(result.getLong("user"));
             } else {
-                //TODO:
+                //TODO: Log failure to get ticket member
+                //TODO: Throw error?
             }
         } catch(SQLException e) {
             e.printStackTrace();
@@ -66,6 +67,7 @@ public abstract class TicketHandler implements WaitHandler {
 
     @Override
     public void onTimeout() {
+        //TODO: Log failure to get and/or delete message
         Modmail.INSTANCE.getModmailChannel().retrieveMessageById(messageID).queue(message -> message.delete().queue());
     }
 

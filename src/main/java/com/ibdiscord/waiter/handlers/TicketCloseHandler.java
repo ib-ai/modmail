@@ -19,9 +19,11 @@
 
 package com.ibdiscord.waiter.handlers;
 
+import com.ibdiscord.Modmail;
 import com.ibdiscord.data.db.DataContainer;
 import com.ibdiscord.utils.UEmoji;
 import com.ibdiscord.utils.UFormatter;
+import com.ibdiscord.waiter.Waiter;
 import net.dv8tion.jda.api.entities.Member;
 
 import java.sql.Connection;
@@ -42,12 +44,14 @@ public class TicketCloseHandler extends TicketHandler {
 
     @Override
     public void onCreate() {
-        getModmailChannel().sendMessage(UFormatter.closeConfirmation(getTicketMember())).queue(
+        Modmail.INSTANCE.getModmailChannel().sendMessage(UFormatter.closeConfirmation(getTicketMember())).queue(
             success -> {
                 success.addReaction(UEmoji.YES_CONFIRMATION_EMOJI).queue();
                 success.addReaction(UEmoji.NO_CONFIRMATION_EMOJI).queue();
                 setMessageID(success.getIdLong());
             }, failure -> {
+                //TODO: Log failure to create confirmation message.
+                Waiter.INSTANCE.cancel(getMember());
             });
     }
 
@@ -60,25 +64,32 @@ public class TicketCloseHandler extends TicketHandler {
     public boolean onReact(String emoji) {
         if (emoji.equalsIgnoreCase(UEmoji.YES_CONFIRMATION_EMOJI)) {
             try (Connection con = DataContainer.INSTANCE.getConnection()) {
+                //Close ticket
                 PreparedStatement pst = con.prepareStatement("UPDATE \"mm_tickets\" SET \"open\"=FALSE WHERE \"ticket_id\"=?");
                 pst.setLong(1, getTicketID());
                 if (pst.executeUpdate() == 1) {
-                    //Edit ticket
+                    //Edit ticket message
                     pst = con.prepareStatement("SELECT \"message_id\" FROM \"mm_tickets\" WHERE \"ticket_id\"=?");
                     pst.setLong(1, getTicketID());
                     ResultSet result = pst.executeQuery();
                     if (result.next()) {
-                        getModmailChannel().retrieveMessageById(result.getLong("message_id")).queue(
+                        //TODO: Log failure to get and/or delete message
+                        Modmail.INSTANCE.getModmailChannel().retrieveMessageById(result.getLong("message_id")).queue(
                             message -> {
                                 message.editMessage(UFormatter.closedTicket(getMember(), getTicketMember())).queue();
-                                message.clearReactions();
+                                message.clearReactions().queue();
                             });
+                    } else {
+                        //TODO: Log failure to get ticket message id
                     }
 
                     //Remove Confirmation Message
                     this.onTimeout();
 
                     return true;
+                } else {
+                    //TODO: Log failure to close ticket
+                    Modmail.INSTANCE.getModmailChannel().sendMessage("Database Error. Failed to close ticket. Message a bot dev.").queue();
                 }
             } catch (SQLException e) {
                 e.printStackTrace();

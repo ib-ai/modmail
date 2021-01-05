@@ -19,15 +19,18 @@
 
 package com.ibdiscord.waiter.handlers;
 
+import com.ibdiscord.Modmail;
 import com.ibdiscord.data.db.DataContainer;
 import com.ibdiscord.utils.UEmoji;
 import com.ibdiscord.utils.UFormatter;
+import com.ibdiscord.waiter.Waiter;
 import net.dv8tion.jda.api.entities.Member;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 public class TicketTimoutHandler extends TicketHandler {
 
@@ -42,14 +45,15 @@ public class TicketTimoutHandler extends TicketHandler {
 
     @Override
     public void onCreate() {
-        getModmailChannel().sendMessage(UFormatter.timeoutConfirmation(getTicketMember())).queue(
+        Modmail.INSTANCE.getModmailChannel().sendMessage(UFormatter.timeoutConfirmation(getTicketMember())).queue(
             success -> {
                 success.addReaction(UEmoji.YES_CONFIRMATION_EMOJI).queue();
                 success.addReaction(UEmoji.NO_CONFIRMATION_EMOJI).queue();
                 setMessageID(success.getIdLong());
             },
             failure -> {
-
+                //TODO: Log failure to create confirmation message
+                Waiter.INSTANCE.cancel(getMember());
             });
     }
 
@@ -62,17 +66,35 @@ public class TicketTimoutHandler extends TicketHandler {
     public boolean onReact(String emoji) {
         if (emoji.equalsIgnoreCase(UEmoji.YES_CONFIRMATION_EMOJI)) {
             try (Connection con = DataContainer.INSTANCE.getConnection()) {
+                //Set timeout timestamp
+                Timestamp timeout = Timestamp.valueOf(LocalDateTime.now().plusDays(1));
+
+                //Update ticket timeout time
                 PreparedStatement pst = con.prepareStatement("UPDATE \"mm_tickets\" SET \"timeout\"=? WHERE \"ticket_id\"=?");
-                //TODO: Improve this
-                Timestamp timestamp = new Timestamp(System.currentTimeMillis() + 24 * 60 * 60 * 1000);
-                pst.setTimestamp(1, timestamp);
+                pst.setTimestamp(1, timeout);
                 pst.setLong(2, getTicketID());
                 if (pst.executeUpdate() > 0) {
+                    //TODO: Update ticket log and render new ticket
+                    getTicketMember().getUser().openPrivateChannel().queue(
+                        success -> {
+                            success.sendMessage(UFormatter.timeoutMessage(timeout)).queue(
+                                    success1 -> {
+                                        //Do nothing
+                                    },
+                                    failure -> {
+                                        //TODO: Log failure to send timeout message
+                                    });
+                        },
+                        failure -> {
+                            //TODO: Log failure to open private channel
+                        });
+
                     this.onTimeout();
                     return true;
+                } else {
+                    //TODO: Log failure to update db with new timeout time
+                    Modmail.INSTANCE.getModmailChannel().sendMessage("Database Error. Failed to set timeout time. Message a bot dev.").queue();
                 }
-                //TODO: Send timeout message
-                //TODO: Update log
             } catch (SQLException e) {
                 e.printStackTrace();
             }

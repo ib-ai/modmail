@@ -23,10 +23,7 @@ import com.ibdiscord.Modmail;
 import com.ibdiscord.data.db.DataContainer;
 import com.ibdiscord.utils.UEmoji;
 import com.ibdiscord.utils.UFormatter;
-import com.ibdiscord.utils.objects.Ticket;
-import com.ibdiscord.utils.objects.TicketResponse;
 import com.ibdiscord.waiter.Waiter;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -41,6 +38,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 public class MessageListener extends ListenerAdapter {
@@ -64,19 +62,39 @@ public class MessageListener extends ListenerAdapter {
             return;
         }
 
+        //Check if user is in guild?
+
         try (Connection con = DataContainer.INSTANCE.getConnection()) {
             long userID = event.getAuthor().getIdLong();
-            PreparedStatement pst = con.prepareStatement("SELECT \"ticket_id\", \"timeout\" FROM \"mm_tickets\" WHERE \"user\"=? AND \"open\"=TRUE;");
+
+            //Check for timeout
+            PreparedStatement pst = con.prepareStatement("SELECT \"timeout\" FROM \"mm_tickets\" WHERE \"user\"=? ORDER BY \"timeout\" DESC;");
             pst.setLong(1, userID);
             ResultSet result = pst.executeQuery();
 
             if (result.next()) {
-                //TODO: Make timeouts persist if ticket is closed?
+                //Get latest timeout
                 Timestamp timeout = result.getTimestamp("timeout");
+                //Check if latest timeout is still active
                 if (LocalDateTime.now().isBefore(timeout.toLocalDateTime())) {
+                    //Send message about being timed out.
+                    event.getChannel().sendMessage(UFormatter.timeoutMessage(timeout)).queue();
                     return;
                 }
+            }
+
+            //Get ticket info
+            pst = con.prepareStatement("SELECT \"ticket_id\", \"message_id\" FROM \"mm_tickets\" WHERE \"user\"=? AND \"open\"=TRUE;");
+            pst.setLong(1, userID);
+            result = pst.executeQuery();
+
+            long messageId = -1;
+
+            if (result.next()) {
+                //If ticket already open, get current message id of ticket
+                messageId = result.getLong("message_id");
             } else {
+                //Otherwise, open new ticket
                 pst = con.prepareStatement("INSERT INTO \"mm_tickets\" (\"user\")"
                         + "VALUES (?)"
                         + "RETURNING \"ticket_id\";"
@@ -85,48 +103,49 @@ public class MessageListener extends ListenerAdapter {
                 result = pst.executeQuery();
 
                 if (!result.next()) {
+                    //TODO: Log failure to create new ticket
                     return;
                 }
             }
 
+            //Get ticket ID
             int ticketId = result.getInt("ticket_id");
 
+            //Insert new response
             pst = con.prepareStatement("INSERT INTO \"mm_ticket_responses\" (\"ticket_id\", \"user\", \"response\", \"as_server\")"
                     + "VALUES (?, ?, ?, FALSE)"
             );
             pst.setInt(1, ticketId);
             pst.setLong(2, userID);
             pst.setString(3, event.getMessage().getContentRaw());
-            pst.execute();
-
-            event.getMessage().addReaction("U+1F4E8").queue();
-
-            Guild guild = Modmail.INSTANCE.getGuild();
-
-            Ticket ticket = new Ticket(guild.getMember(event.getAuthor()));
-            pst = con.prepareStatement("SELECT \"user\", \"response\", \"timestamp\" FROM \"mm_ticket_responses\" WHERE \"ticket_id\"=? ORDER BY \"response_id\" ASC");
-            pst.setLong(1, ticketId);
-            ResultSet results = pst.executeQuery();
-            while (results.next()) {
-                ticket.addResponse(new TicketResponse(guild.getMemberById(results.getLong("user")),
-                        results.getString("response"),
-                        results.getTimestamp("timestamp")));
+            if (pst.executeUpdate() == 0) {
+                //TODO: Log failure to insert new response
             }
-            MessageEmbed ticketEmbed = UFormatter.ticketEmbed(ticket);
 
-            //TODO: remove old message, if exists
+            //Remove old ticket message and send new one
             TextChannel modmailChannel = Modmail.INSTANCE.getModmailChannel();
+            if (messageId != -1) {
+                modmailChannel.deleteMessageById(messageId).queue();
+            }
+
+            //Format new ticket
+            MessageEmbed ticketEmbed = UFormatter.ticketEmbed(ticketId);
             Message message = modmailChannel.sendMessage(ticketEmbed).complete();
             if (message != null) {
+                event.getMessage().addReaction("U+1F4E8").queue();
+
                 message.addReaction(UEmoji.REPLY_TICKET_EMOJI).queue();
                 message.addReaction(UEmoji.CLOSE_TICKET_EMOJI).queue();
                 message.addReaction(UEmoji.TIMEOUT_TICKET_EMOJI).queue();
                 pst = con.prepareStatement("UPDATE \"mm_tickets\" SET \"message_id\"=? WHERE \"ticket_id\"=?");
                 pst.setLong(1, message.getIdLong());
                 pst.setLong(2, ticketId);
-                if (pst.executeUpdate() > 0) {
-                    //TODO:
+                if (pst.executeUpdate() == 0) {
+                    //TODO: Log failure to update ticket's message id
                 }
+            } else {
+                //TODO: Log failure to send new ticket.
+                event.getChannel().sendMessage("Sorry, we encountered an error and your message wasn't sent through. Please try again.");
             }
         } catch (SQLException e) {
             e.printStackTrace();

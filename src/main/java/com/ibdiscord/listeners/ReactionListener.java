@@ -52,37 +52,39 @@ public class ReactionListener extends ListenerAdapter {
             return;
         }
 
-        String emoji = event.getReactionEmote().getAsCodepoints().toUpperCase();
+        String emoji = event.getReactionEmote().getAsCodepoints();
 
         try (Connection con = DataContainer.INSTANCE.getConnection()) {
             long messageId = event.getMessageIdLong();
+
+            //Get ticket info
             PreparedStatement pst = con.prepareStatement("SELECT \"ticket_id\" from mm_tickets WHERE \"message_id\"=? AND \"open\"=TRUE");
             pst.setLong(1, messageId);
+
             ResultSet result = pst.executeQuery();
             if (result.next()) {
                 long ticketID = result.getLong("ticket_id");
+
+                //If the reaction is on a ticket, check which handler is applicable.
                 WaitHandler handler;
-                switch (emoji) {
-                    case UEmoji.CLOSE_TICKET_EMOJI:
-                        handler = new TicketCloseHandler(event.getMember(), ticketID);
-                        break;
-
-                    case UEmoji.REPLY_TICKET_EMOJI:
-                        handler = new TicketReplyHandler(event.getMember(), ticketID);
-                        break;
-
-                    case UEmoji.TIMEOUT_TICKET_EMOJI:
-                        handler = new TicketTimoutHandler(event.getMember(), ticketID);
-                        break;
-
-                    default:
-                        return;
+                if (emoji.equalsIgnoreCase(UEmoji.CLOSE_TICKET_EMOJI)) {
+                    handler = new TicketCloseHandler(event.getMember(), ticketID);
+                } else if (emoji.equalsIgnoreCase(UEmoji.REPLY_TICKET_EMOJI)) {
+                    handler = new TicketReplyHandler(event.getMember(), ticketID);
+                } else if (emoji.equalsIgnoreCase(UEmoji.TIMEOUT_TICKET_EMOJI)) {
+                    handler = new TicketTimoutHandler(event.getMember(), ticketID);
+                } else {
+                    //Irrelevant Reaction, ignore
+                    return;
                 }
 
+                //Try to create wait task
                 if (!Waiter.INSTANCE.create(event.getMember(), 5 * 60, handler)) {
-                    //TODO: Failed to create message
+                    event.getChannel().sendMessage("Please only select one action at a time.").queue();
                 }
             } else {
+                //If not ticket, check if member has a active task.
+                //TODO: Check if message is part of user's task?
                 if (Waiter.INSTANCE.hasTask(event.getMember())) {
                     if (emoji.equalsIgnoreCase(UEmoji.NO_CONFIRMATION_EMOJI)) {
                         Waiter.INSTANCE.cancel(event.getMember());
@@ -95,6 +97,8 @@ public class ReactionListener extends ListenerAdapter {
             e.printStackTrace();
         }
 
+        //Remove reaction
+        //TODO: This might be a bit overkill
         event.getReaction().removeReaction(event.getUser()).queue();
     }
 }
