@@ -20,14 +20,26 @@
 package com.ibdiscord.utils.objects;
 
 import lombok.Getter;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.Member;
 
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
 
 public class TicketResponse {
 
-    @Getter private User user;
+    @Getter private Member member;
     @Getter private String response;
-    @Getter private LocalDateTime timestamp;
+    @Getter private Timestamp timestamp;
+
+    /**
+     * Create a Ticket Response.
+     * @param member Response Member
+     * @param response Response String
+     * @param timestamp Response Timestamp
+     */
+    public TicketResponse(Member member, String response, Timestamp timestamp) {
+        this.member = member;
+        this.response = response;
+        this.timestamp = timestamp;
+    }
 
 }
