@@ -22,10 +22,28 @@ package com.ibdiscord.utils.objects;
 import lombok.Getter;
 import net.dv8tion.jda.api.entities.Member;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Ticket {
 
     @Getter private Member member;
     @Getter private List<TicketResponse> responses;
+
+    /**
+     * Create a ticket.
+     * @param member Ticket Member
+     */
+    public Ticket(Member member) {
+        this.member = member;
+        this.responses = new ArrayList<>();
+    }
+
+    /**
+     * Add a response to a ticket.
+     * @param response Ticket Response
+     */
+    public void addResponse(TicketResponse response) {
+        responses.add(response);
+    }
 }
