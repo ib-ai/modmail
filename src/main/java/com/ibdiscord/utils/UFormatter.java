@@ -20,13 +20,14 @@
 package com.ibdiscord.utils;
 
 import com.ibdiscord.Modmail;
-import com.ibdiscord.utils.objects.Ticket;
-import com.ibdiscord.utils.objects.TicketResponse;
+import com.ibdiscord.data.db.DataContainer;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 
+import java.sql.*;
 import java.time.format.DateTimeFormatter;
 
 public final class UFormatter {
@@ -46,30 +47,62 @@ public final class UFormatter {
     }
 
     /**
-     * Formats a ticket as an embed.
-     * @param ticket Ticket
+     * Formats a timeout message for user DMs.
+     * @param timeout Timeout timestamp
      * @return Message Embed
      */
-    public static MessageEmbed ticketEmbed(Ticket ticket) {
+    public static MessageEmbed timeoutMessage(Timestamp timeout) {
         EmbedBuilder builder = new EmbedBuilder();
 
-        Member ticketMember = ticket.getMember();
+        String timeoutTime = timeout.toLocalDateTime().format(DateTimeFormatter.ofPattern("HH:mm:ss MMM dd yyy"));
+        builder.setDescription(String.format("You have been timed out. You will be able to message ModMail again after %s.", timeoutTime));
 
-        builder.setTitle(String.format("ModMail Conversation for %s", formatMember(ticketMember.getUser())));
-        builder.setDescription(String.format("User %s has **%d** roles\n", ticketMember.getAsMention(), ticketMember.getRoles().size())
-                + String.format("Joined Discord: **%s**\n", ticketMember.getTimeCreated().format(DateTimeFormatter.ofPattern("MMM dd yyyy")))
-                + String.format("Joined Server: **%s**", ticketMember.getTimeJoined().format(DateTimeFormatter.ofPattern("MMM dd yyyy")))
-        );
+        return builder.build();
+    }
 
-        for (TicketResponse response : ticket.getResponses()) {
-            String messenger = formatMember(response.getMember().getUser());
-            if (response.getMember().getIdLong() == ticketMember.getIdLong()) {
-                messenger = "user";
+    /**
+     * Formats a ticket as an embed.
+     * @param ticketId Ticket
+     * @return Message Embed
+     */
+    public static MessageEmbed ticketEmbed(long ticketId) {
+        EmbedBuilder builder = new EmbedBuilder();
+
+        try (Connection con = DataContainer.INSTANCE.getConnection()) {
+            PreparedStatement pst = con.prepareStatement("SELECT \"user\" FROM \"mm_tickets\" WHERE \"ticket_id\"=?");
+            pst.setLong(1, ticketId);
+            ResultSet result = pst.executeQuery();
+
+            if (result.next()) {
+                Guild guild = Modmail.INSTANCE.getGuild();
+                Member ticketMember = guild.getMemberById(result.getLong("user"));
+
+                builder.setTitle(String.format("ModMail Conversation for %s", formatMember(ticketMember.getUser())));
+                builder.setDescription(String.format("User %s has **%d** roles\n", ticketMember.getAsMention(), ticketMember.getRoles().size())
+                        + String.format("Joined Discord: **%s**\n", ticketMember.getTimeCreated().format(DateTimeFormatter.ofPattern("MMM dd yyyy")))
+                        + String.format("Joined Server: **%s**", ticketMember.getTimeJoined().format(DateTimeFormatter.ofPattern("MMM dd yyyy")))
+                );
+
+                pst = con.prepareStatement("SELECT \"user\", \"response\", \"timestamp\" FROM \"mm_ticket_responses\" WHERE \"ticket_id\"=? ORDER BY \"response_id\" ASC");
+                pst.setLong(1, ticketId);
+                ResultSet results = pst.executeQuery();
+                while (results.next()) {
+                    Member responseMember = guild.getMemberById(results.getLong("user"));
+                    String messenger = formatMember(responseMember.getUser());
+                    if (responseMember.getIdLong() == ticketMember.getIdLong()) {
+                        messenger = "user";
+                    }
+                    String timestamp = results.getTimestamp("timestamp").toLocalDateTime().format(DateTimeFormatter.ofPattern("MMM dd yyyy HH:mm:ss"));
+                    builder.addField(String.format("On %s, %s wrote", timestamp, messenger),
+                            results.getString("response"),
+                            false
+                    );
+                }
+            } else {
+                builder.setTitle("Database Error. Could not find ticket. Message a bot dev.");
             }
-            builder.addField(String.format("On %s, %s wrote", response.getTimestamp().toLocalDateTime().format(DateTimeFormatter.ofPattern("MMM dd yyyy HH:mm:ss")), messenger),
-                    response.getResponse(),
-                    false
-            );
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
 
         return builder.build();
