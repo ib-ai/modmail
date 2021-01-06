@@ -58,7 +58,7 @@ public abstract class TicketHandler implements WaitHandler {
             if  (result.next()) {
                 ticketMember = Modmail.INSTANCE.getGuild().getMemberById(result.getLong("user"));
             } else {
-                //TODO: Log failure to get ticket member
+                Modmail.INSTANCE.getLogger().error("Could not retrieve user id from ticket %d", ticketID);
                 //TODO: Throw error?
             }
         } catch(SQLException e) {
@@ -68,8 +68,14 @@ public abstract class TicketHandler implements WaitHandler {
 
     @Override
     public void onTimeout() {
-        //TODO: Log failure to get and/or delete message
-        Modmail.INSTANCE.getModmailChannel().retrieveMessageById(messageID).queue(message -> message.delete().queue());
+        Modmail.INSTANCE.getModmailChannel().retrieveMessageById(messageID).queue(
+            message -> message.delete().queue(
+                success -> {
+                    //Do nothing
+                },
+                failure -> Modmail.INSTANCE.getLogger().error("Failed to delete confirmation message %d.", messageID)
+            ),
+            failure -> Modmail.INSTANCE.getLogger().error("Failed to find confirmation message %d.", messageID));
     }
 
 }

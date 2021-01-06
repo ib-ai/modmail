@@ -73,14 +73,17 @@ public class TicketCloseHandler extends TicketHandler {
                     pst.setLong(1, getTicketID());
                     ResultSet result = pst.executeQuery();
                     if (result.next()) {
-                        //TODO: Log failure to get and/or delete message
-                        Modmail.INSTANCE.getModmailChannel().retrieveMessageById(result.getLong("message_id")).queue(
+                        long messageId = result.getLong("message_id");
+                        Modmail.INSTANCE.getModmailChannel().retrieveMessageById(messageId).queue(
                             message -> {
                                 message.editMessage(UFormatter.closedTicket(getMember(), getTicketMember())).queue();
                                 message.clearReactions().queue();
+                            },
+                            failure -> {
+                                Modmail.INSTANCE.getLogger().error("Failed to retrieve ticket message %d.", messageId);
                             });
                     } else {
-                        //TODO: Log failure to get ticket message id
+                        Modmail.INSTANCE.getLogger().error("Failed to get message id for ticket %d.", getTicketID());
                     }
 
                     //Remove Confirmation Message
@@ -88,7 +91,7 @@ public class TicketCloseHandler extends TicketHandler {
 
                     return true;
                 } else {
-                    //TODO: Log failure to close ticket
+                    Modmail.INSTANCE.getLogger().error("Failed to close ticket %d.", getTicketID());
                     Modmail.INSTANCE.getModmailChannel().sendMessage("Database Error. Failed to close ticket. Message a bot dev.").queue();
                 }
             } catch (SQLException e) {
