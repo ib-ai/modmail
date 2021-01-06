@@ -52,7 +52,7 @@ public class TicketTimoutHandler extends TicketHandler {
                 setMessageID(success.getIdLong());
             },
             failure -> {
-                //TODO: Log failure to create confirmation message
+                Modmail.INSTANCE.getLogger().error("Failed to send ticket timeout confirmation for user %d on ticket %d.", getMember().getIdLong(), getTicketID());
                 Waiter.INSTANCE.cancel(getMember());
             });
     }
@@ -82,17 +82,17 @@ public class TicketTimoutHandler extends TicketHandler {
                                     //Do nothing
                                 },
                                 failure -> {
-                                    //TODO: Log failure to send timeout message
+                                    Modmail.INSTANCE.getLogger().error("Failed to send timeout message to user %d", getTicketMember().getIdLong());
                                 });
                         },
                         failure -> {
-                            //TODO: Log failure to open private channel
+                            Modmail.INSTANCE.getLogger().error("Failed to open private channel with user %d", getTicketMember().getIdLong());
                         });
 
                     this.onTimeout();
                     return true;
                 } else {
-                    //TODO: Log failure to update db with new timeout time
+                    Modmail.INSTANCE.getLogger().error("Failed ot update db with new timeout time for ticket %d.", getTicketID());
                     Modmail.INSTANCE.getModmailChannel().sendMessage("Database Error. Failed to set timeout time. Message a bot dev.").queue();
                 }
             } catch (SQLException e) {
