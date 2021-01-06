@@ -51,7 +51,7 @@ public class TicketReplyHandler extends TicketHandler {
                 setMessageID(success.getIdLong());
             },
             failure -> {
-                //TODO: Log failure to create confirmation message
+                Modmail.INSTANCE.getLogger().error("Failed to send ticket reply confirmation for user %d on ticket %d.", getMember().getIdLong(), getTicketID());
                 Waiter.INSTANCE.cancel(getMember());
             });
     }
@@ -74,15 +74,20 @@ public class TicketReplyHandler extends TicketHandler {
             pst.setString(3, input);
 
             if (pst.executeUpdate() == 0) {
-                //TODO: Log failure to insert new response
+                Modmail.INSTANCE.getLogger().error("Failed to insert new response by user %d on ticket %d.", getMember().getIdLong(), getTicketID());
                 return false;
             }
 
             //Send response to user
-            //TODO: Log failure to get and/or send message
             MessageEmbed replyMessage = UFormatter.replyMessage(input);
-            getTicketMember().getUser().openPrivateChannel().queue(privateChannel ->
-                privateChannel.sendMessage(replyMessage).queue()
+            getTicketMember().getUser().openPrivateChannel().queue(
+                privateChannel -> privateChannel.sendMessage(replyMessage).queue(
+                    success -> {
+                        //Do nothing.
+                    },
+                    failure -> Modmail.INSTANCE.getLogger().error("Failed to send response to user %d", getTicketMember().getIdLong())
+                ),
+                failure -> Modmail.INSTANCE.getLogger().error("Failed to open private channel for user %d", getTicketMember().getIdLong())
             );
 
             this.onTimeout();
@@ -97,13 +102,11 @@ public class TicketReplyHandler extends TicketHandler {
                 Modmail.INSTANCE.getModmailChannel().retrieveMessageById(result.getLong("message_id")).queue(
                     success -> success.editMessage(ticketEmbed).queue(),
                     failure -> {
-                        //TODO: Log failure to update ticket message
+                        Modmail.INSTANCE.getLogger().error("Failed to retrieve message for ticket %d.", getTicketID());
                     });
             } else {
-                //TODO: Log failure to get ticket message id
+                Modmail.INSTANCE.getLogger().error("Failed ot get message id for ticket %d.", getTicketID());
             }
-
-            //TODO: Remove user message
 
             return true;
         } catch (SQLException e) {
