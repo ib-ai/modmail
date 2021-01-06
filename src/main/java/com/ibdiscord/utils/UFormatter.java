@@ -22,10 +22,7 @@ package com.ibdiscord.utils;
 import com.ibdiscord.Modmail;
 import com.ibdiscord.data.db.DataContainer;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.MessageEmbed;
-import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -33,6 +30,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
+import java.util.stream.Collectors;
 
 public final class UFormatter {
 
@@ -172,5 +170,21 @@ public final class UFormatter {
      */
     public static String formatMember(User user) {
         return user.getAsTag();
+    }
+
+    /**
+     * Formats a Message object as a ticket response.
+     * @param message Message Object
+     * @return Response String
+     */
+    public static String formatResponse(Message message) {
+        String attachments = message.getAttachments().stream()
+                .map(attachment -> {
+                    String type = attachment.isImage() ? "Image" : attachment.isVideo() ? "Video" : "Unknown";
+                    return String.format("[%s Attachment](%s)", type, attachment.getUrl());
+                })
+                .collect(Collectors.joining("\n"));
+
+        return String.format("%s\n%s", message.getContentRaw(), attachments).trim();
     }
 }
