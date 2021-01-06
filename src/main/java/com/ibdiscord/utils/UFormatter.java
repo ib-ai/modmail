@@ -29,6 +29,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 
@@ -56,7 +58,7 @@ public final class UFormatter {
     public static MessageEmbed timeoutMessage(Timestamp timeout) {
         EmbedBuilder builder = new EmbedBuilder();
 
-        String timeoutTime = timeout.toLocalDateTime().format(DateTimeFormatter.ofPattern("HH:mm:ss MMM dd yyy"));
+        String timeoutTime = UFormatter.formatTimestamp(timeout);
         builder.setDescription(String.format("You have been timed out. You will be able to message ModMail again after %s.", timeoutTime));
 
         return builder.build();
@@ -94,7 +96,7 @@ public final class UFormatter {
                     if (responseMember.getIdLong() == ticketMember.getIdLong()) {
                         messenger = "user";
                     }
-                    String timestamp = results.getTimestamp("timestamp").toLocalDateTime().format(DateTimeFormatter.ofPattern("MMM dd yyyy HH:mm:ss"));
+                    String timestamp = UFormatter.formatTimestamp(results.getTimestamp("timestamp"));
                     builder.addField(String.format("On %s, %s wrote", timestamp, messenger),
                             results.getString("response"),
                             false
@@ -186,5 +188,14 @@ public final class UFormatter {
                 .collect(Collectors.joining("\n"));
 
         return String.format("%s\n%s", message.getContentRaw(), attachments).trim();
+    }
+
+    /**
+     * Format a Timestamp.
+     * @param timestamp Timestamp
+     * @return Formatted Timestamp
+     */
+    public static String formatTimestamp(Timestamp timestamp) {
+        return OffsetDateTime.ofInstant(timestamp.toInstant(), ZoneOffset.systemDefault()).format(DateTimeFormatter.ofPattern("MMM dd yyyy HH:mm:ss O"));
     }
 }
