@@ -50,7 +50,7 @@ public class TicketCloseHandler extends TicketHandler {
                 success.addReaction(UEmoji.NO_CONFIRMATION_EMOJI).queue();
                 setMessageID(success.getIdLong());
             }, failure -> {
-                //TODO: Log failure to create confirmation message.
+                Modmail.INSTANCE.getLogger().error("Failed to send ticket close confirmation for user %d on ticket %d.", getMember().getIdLong(), getTicketID());
                 Waiter.INSTANCE.cancel(getMember());
             });
     }
