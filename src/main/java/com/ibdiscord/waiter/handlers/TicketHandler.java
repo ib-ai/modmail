@@ -31,14 +31,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+@Getter
 public abstract class TicketHandler implements WaitHandler {
 
-    @Getter private Member member;
+    private Member member;
 
-    @Getter private long ticketID;
-    @Getter private Member ticketMember;
+    private long ticketID;
+    private Member ticketMember;
 
-    @Getter @Setter(value = AccessLevel.PROTECTED)
+    @Setter(value = AccessLevel.PROTECTED)
     private long messageID;
 
     /**

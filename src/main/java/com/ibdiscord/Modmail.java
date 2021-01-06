@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.security.auth.login.LoginException;
 
+@Getter
 public enum Modmail {
 
     /**
@@ -44,20 +45,18 @@ public enum Modmail {
      */
     INSTANCE;
 
-    @Getter private LocalConfig config;
-    @Getter private Logger logger = LoggerFactory.getLogger(getClass());
+    private LocalConfig config;
+    private Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Getter private JDA jda;
-    @Getter private TextChannel modmailChannel;
-    @Getter private Guild guild;
+    private JDA jda;
+    private TextChannel modmailChannel;
+    private Guild guild;
 
     /**
      * Entry point of the program.
      * @param args The arguments
      */
     public static void main(String[] args) {
-        //TODO: Check Java Version
-
         Thread.currentThread().setName("Main");
         Modmail.INSTANCE.init();
     }
