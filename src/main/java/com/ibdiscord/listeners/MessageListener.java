@@ -60,8 +60,6 @@ public class MessageListener extends ListenerAdapter {
             return;
         }
 
-        //Check if user is in guild?
-
         try (Connection con = DataContainer.INSTANCE.getConnection()) {
             long userID = event.getAuthor().getIdLong();
 
