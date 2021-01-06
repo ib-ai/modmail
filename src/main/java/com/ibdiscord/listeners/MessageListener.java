@@ -51,7 +51,12 @@ public class MessageListener extends ListenerAdapter {
             return;
         }
 
-        Waiter.INSTANCE.input(event.getMember(), event.getMessage().getContentRaw());
+        String response = UFormatter.formatResponse(event.getMessage());
+        if (response.isEmpty()) {
+            return;
+        }
+
+        Waiter.INSTANCE.input(event.getMember(), response);
     }
 
     @Override
@@ -77,6 +82,11 @@ public class MessageListener extends ListenerAdapter {
                     event.getChannel().sendMessage(UFormatter.timeoutMessage(timeout)).queue();
                     return;
                 }
+            }
+
+            String response = UFormatter.formatResponse(event.getMessage());
+            if (response.isEmpty()) {
+                return;
             }
 
             //Get ticket info
@@ -113,7 +123,7 @@ public class MessageListener extends ListenerAdapter {
             );
             pst.setInt(1, ticketId);
             pst.setLong(2, userID);
-            pst.setString(3, event.getMessage().getContentRaw());
+            pst.setString(3, response);
             if (pst.executeUpdate() == 0) {
                 Modmail.INSTANCE.getLogger().error("Failed to insert new response from %d.", userID);
                 return;
