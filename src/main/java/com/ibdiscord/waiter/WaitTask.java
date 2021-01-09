@@ -26,11 +26,12 @@ import lombok.Getter;
  * Wait Task
  * Based off of Arraying's Impulse Bot.
  */
+@Getter
 final class WaitTask {
 
-    @Getter private boolean handled;
+    private boolean handled;
 
-    @Getter private final WaitHandler handler;
+    private final WaitHandler handler;
 
     /**
      * Create a new wait task.

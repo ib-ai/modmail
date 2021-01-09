@@ -21,21 +21,22 @@ package com.ibdiscord.data;
 
 import lombok.Getter;
 
+@Getter
 public final class LocalConfig {
 
-    @Getter private final String botToken;
+    private final String botToken;
 
-    @Getter private final String dbIP;
+    private final String dbIP;
 
-    @Getter private final String dbUsername;
+    private final String dbUsername;
 
-    @Getter private final String dbPassword;
+    private final String dbPassword;
 
-    @Getter private final String dbName;
+    private final String dbName;
 
-    @Getter private final String guildId;
+    private final String guildId;
 
-    @Getter private final String channelId;
+    private final String channelId;
 
     /**
      * Constructor for the local configuration object.

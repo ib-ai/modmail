@@ -24,7 +24,6 @@ import com.ibdiscord.data.db.DataContainer;
 import com.ibdiscord.utils.UEmoji;
 import com.ibdiscord.utils.UFormatter;
 import com.ibdiscord.waiter.Waiter;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
@@ -52,7 +51,12 @@ public class MessageListener extends ListenerAdapter {
             return;
         }
 
-        Waiter.INSTANCE.input(event.getMember(), event.getMessage().getContentRaw());
+        String response = UFormatter.formatResponse(event.getMessage());
+        if (response.isEmpty()) {
+            return;
+        }
+
+        Waiter.INSTANCE.input(event.getMember(), response);
     }
 
     @Override
@@ -60,8 +64,6 @@ public class MessageListener extends ListenerAdapter {
         if (event.getAuthor().isBot()) {
             return;
         }
-
-        //Check if user is in guild?
 
         try (Connection con = DataContainer.INSTANCE.getConnection()) {
             long userID = event.getAuthor().getIdLong();
@@ -80,6 +82,11 @@ public class MessageListener extends ListenerAdapter {
                     event.getChannel().sendMessage(UFormatter.timeoutMessage(timeout)).queue();
                     return;
                 }
+            }
+
+            String response = UFormatter.formatResponse(event.getMessage());
+            if (response.isEmpty()) {
+                return;
             }
 
             //Get ticket info
@@ -102,7 +109,7 @@ public class MessageListener extends ListenerAdapter {
                 result = pst.executeQuery();
 
                 if (!result.next()) {
-                    //TODO: Log failure to create new ticket
+                    Modmail.INSTANCE.getLogger().error("Failed to create new ticket for %d.", userID);
                     return;
                 }
             }
@@ -116,9 +123,10 @@ public class MessageListener extends ListenerAdapter {
             );
             pst.setInt(1, ticketId);
             pst.setLong(2, userID);
-            pst.setString(3, event.getMessage().getContentRaw());
+            pst.setString(3, response);
             if (pst.executeUpdate() == 0) {
-                //TODO: Log failure to insert new response
+                Modmail.INSTANCE.getLogger().error("Failed to insert new response from %d.", userID);
+                return;
             }
 
             //Remove old ticket message and send new one
@@ -129,23 +137,28 @@ public class MessageListener extends ListenerAdapter {
 
             //Format new ticket
             MessageEmbed ticketEmbed = UFormatter.ticketEmbed(ticketId);
-            Message message = modmailChannel.sendMessage(ticketEmbed).complete();
-            if (message != null) {
-                event.getMessage().addReaction("U+1F4E8").queue();
+            modmailChannel.sendMessage(ticketEmbed).queue(
+                message -> {
+                    event.getMessage().addReaction("U+1F4E8").queue();
 
-                message.addReaction(UEmoji.REPLY_TICKET_EMOJI).queue();
-                message.addReaction(UEmoji.CLOSE_TICKET_EMOJI).queue();
-                message.addReaction(UEmoji.TIMEOUT_TICKET_EMOJI).queue();
-                pst = con.prepareStatement("UPDATE \"mm_tickets\" SET \"message_id\"=? WHERE \"ticket_id\"=?");
-                pst.setLong(1, message.getIdLong());
-                pst.setLong(2, ticketId);
-                if (pst.executeUpdate() == 0) {
-                    //TODO: Log failure to update ticket's message id
-                }
-            } else {
-                //TODO: Log failure to send new ticket.
-                event.getChannel().sendMessage("Sorry, we encountered an error and your message wasn't sent through. Please try again.");
-            }
+                    message.addReaction(UEmoji.REPLY_TICKET_EMOJI).queue();
+                    message.addReaction(UEmoji.CLOSE_TICKET_EMOJI).queue();
+                    message.addReaction(UEmoji.TIMEOUT_TICKET_EMOJI).queue();
+                    try (Connection con1 = DataContainer.INSTANCE.getConnection()) {
+                        PreparedStatement pst1 = con1.prepareStatement("UPDATE \"mm_tickets\" SET \"message_id\"=? WHERE \"ticket_id\"=?");
+                        pst1.setLong(1, message.getIdLong());
+                        pst1.setLong(2, ticketId);
+                        if (pst1.executeUpdate() == 0) {
+                            Modmail.INSTANCE.getLogger().error("Failed to set new message id for ticket %d", ticketId);
+                        }
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                },
+                failure -> {
+                    Modmail.INSTANCE.getLogger().error("Failed to send ticket message for ticket %d", ticketId);
+                    event.getChannel().sendMessage("Sorry, we encountered an error and your message wasn't sent through. Please try again.");
+                });
         } catch (SQLException e) {
             e.printStackTrace();
         }
