@@ -9,7 +9,7 @@ node {
     // Packages the source in order to generate a .jar artifact.
     stage('Package') {
         sh "${mavenHome}/bin/mvn -e -Dcheckstyle.skip=true clean install" // Execute compile command.
-        archiveArtifacts 'target/modmail.jar' // Archive artifacts to make available to download.
+        archiveArtifacts 'target/Modmail.jar' // Archive artifacts to make available to download.
     }
 
 }
