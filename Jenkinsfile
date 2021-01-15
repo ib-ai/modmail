@@ -3,7 +3,8 @@ node {
 
     // Checkout the source code from Git.
     stage('Git Checkout') {
-        git 'https://github.com/ib-ai/modmail/'
+        git branch: 'main', 
+            url: 'https://github.com/ib-ai/modmail/'
     }
 
     // Packages the source in order to generate a .jar artifact.
