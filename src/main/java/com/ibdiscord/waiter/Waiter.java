@@ -111,6 +111,16 @@ public enum Waiter {
     }
 
     /**
+     * Method to shutdown waiter and cancel all Wait Tasks.
+     */
+    public void shutdown() {
+        executorService.shutdown();
+        tasks.forEach((member, waitTask) -> {
+            handleEnd(member, waitTask, true);
+        });
+    }
+
+    /**
      * Method to handle the end of a task.
      * @param member Member who task belongs to
      * @param task Wait Task

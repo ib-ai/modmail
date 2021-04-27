@@ -26,6 +26,8 @@ public final class LocalConfig {
 
     private final String botToken;
 
+    private final String botPrefix;
+
     private final String dbIP;
 
     private final String dbUsername;
@@ -45,6 +47,7 @@ public final class LocalConfig {
      */
     public LocalConfig() {
         this.botToken = getEnvironment("TOKEN", "");
+        this.botPrefix = getEnvironment("PREFIX", "]");
 
         this.dbIP = getEnvironment("DATABASE_IP", "");
         this.dbName = getEnvironment("DATABASE_NAME", "");
