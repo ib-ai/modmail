@@ -7,9 +7,6 @@ LABEL "homepage"="https://discord.gg/IBO/"
 
 WORKDIR /modmail/
 
-# Add language files
-COPY lang ./lang
-
 # Download the latest binary from the CI
 ADD https://ci.arraying.de/job/mm/lastSuccessfulBuild/artifact/target/Modmail.jar .
 
