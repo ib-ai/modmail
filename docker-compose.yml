@@ -9,7 +9,7 @@ services:
     restart: on-failure:3
     build:
       context: ./
-      dockerfile: prof.Dockerfile
+      dockerfile: prod.Dockerfile
     env_file:
       - bot.env
     depends_on:
@@ -19,13 +19,10 @@ services:
   db:
     restart: always
     image: postgres
-    container_name: db
-    env_file:
-      - db.env
+    environment:
+      POSTGRES_PASSWORD=toor
     volumes:
-      - db-data:/data
-    ports:
-      - 5432:5432
+      - db-data:/var/lib/postgresql/data
 
 volumes:
   # Database persistence
