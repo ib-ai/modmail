@@ -26,6 +26,7 @@ import com.ibdiscord.data.db.DataContainer;
 import com.ibdiscord.listeners.MessageListener;
 import com.ibdiscord.listeners.ReactionListener;
 import com.ibdiscord.listeners.ShutdownListener;
+import com.ibdiscord.view.TicketViewHandler;
 import lombok.Getter;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -51,6 +52,7 @@ public enum Modmail {
     private LocalConfig config;
     private CommandRegistry commandRegistry;
     private Logger logger = LoggerFactory.getLogger(getClass());
+    private TicketViewHandler viewHandler;
 
     private JDA jda;
     private TextChannel modmailChannel;
@@ -107,6 +109,8 @@ public enum Modmail {
                 jda.shutdownNow();
                 return;
             }
+
+            viewHandler = new TicketViewHandler();
         } catch (LoginException | InterruptedException ex) {
             ex.printStackTrace();
         }
