@@ -69,6 +69,7 @@ public class TicketReplyHandler extends TicketHandler {
                     "The message you send is too large, please make it shorter (no more than %d characters).",
                     MessageEmbed.VALUE_MAX_LENGTH
                 )).queue();
+            this.deleteConfirmation();
             return true;
         }
 
@@ -98,7 +99,7 @@ public class TicketReplyHandler extends TicketHandler {
                 failure -> Modmail.INSTANCE.getLogger().error("Failed to open private channel for user {}.", getTicketMember().getIdLong())
             );
 
-            this.onTimeout();
+            this.deleteConfirmation();
 
             //Update ticket message
             pst = con.prepareStatement("SELECT \"message_id\" FROM \"mm_tickets\" WHERE \"ticket_id\"=?");

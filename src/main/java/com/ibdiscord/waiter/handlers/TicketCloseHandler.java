@@ -87,7 +87,7 @@ public class TicketCloseHandler extends TicketHandler {
                     }
 
                     //Remove Confirmation Message
-                    this.onTimeout();
+                    this.deleteConfirmation();
 
                     return true;
                 } else {

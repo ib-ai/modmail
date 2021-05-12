@@ -68,14 +68,19 @@ public abstract class TicketHandler implements WaitHandler {
 
     @Override
     public void onTimeout() {
-        Modmail.INSTANCE.getModmailChannel().retrieveMessageById(messageID).queue(
-            message -> message.delete().queue(
-                success -> {
-                    //Do nothing
-                },
-                failure -> Modmail.INSTANCE.getLogger().error("Failed to delete confirmation message {}.", messageID)
-            ),
-            failure -> Modmail.INSTANCE.getLogger().error("Failed to find confirmation message {}.", messageID));
+        deleteConfirmation();
     }
+
+    protected void deleteConfirmation() {
+        Modmail.INSTANCE.getModmailChannel().retrieveMessageById(messageID).queue(
+                message -> message.delete().queue(
+                        success -> {
+                            //Do nothing
+                        },
+                        failure -> Modmail.INSTANCE.getLogger().error("Failed to delete confirmation message {}.", messageID)
+                ),
+                failure -> Modmail.INSTANCE.getLogger().error("Failed to find confirmation message {}.", messageID));
+    }
+
 
 }

@@ -89,7 +89,7 @@ public class TicketTimoutHandler extends TicketHandler {
                             Modmail.INSTANCE.getLogger().error("Failed to open private channel with user {}.", getTicketMember().getIdLong());
                         });
 
-                    this.onTimeout();
+                    this.deleteConfirmation();
                     return true;
                 } else {
                     Modmail.INSTANCE.getLogger().error("Failed ot update db with new timeout time for ticket {}.", getTicketID());
