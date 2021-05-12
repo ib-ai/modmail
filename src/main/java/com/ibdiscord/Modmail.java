@@ -19,6 +19,8 @@
 
 package com.ibdiscord;
 
+import com.ibdiscord.command.registry.CommandRegistrar;
+import com.ibdiscord.command.registry.CommandRegistry;
 import com.ibdiscord.data.LocalConfig;
 import com.ibdiscord.data.db.DataContainer;
 import com.ibdiscord.listeners.MessageListener;
@@ -27,6 +29,7 @@ import com.ibdiscord.listeners.ShutdownListener;
 import lombok.Getter;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -46,6 +49,7 @@ public enum Modmail {
     INSTANCE;
 
     private LocalConfig config;
+    private CommandRegistry commandRegistry;
     private Logger logger = LoggerFactory.getLogger(getClass());
 
     private JDA jda;
@@ -67,6 +71,10 @@ public enum Modmail {
     private void init() {
         config = new LocalConfig();
         DataContainer.INSTANCE.connect();
+
+        commandRegistry = new CommandRegistry();
+        CommandRegistrar.INSTANCE.register(commandRegistry);
+
         try {
             jda = JDABuilder.createLight(config.getBotToken(),
                     GatewayIntent.DIRECT_MESSAGE_REACTIONS,
@@ -81,6 +89,7 @@ public enum Modmail {
                             new MessageListener(),
                             new ReactionListener()
                     )
+                    .setActivity(Activity.playing(config.getStatus()))
                     .build();
             jda.setAutoReconnect(true);
             jda.awaitReady();
