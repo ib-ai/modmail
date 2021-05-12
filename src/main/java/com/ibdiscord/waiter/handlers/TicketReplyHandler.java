@@ -51,7 +51,7 @@ public class TicketReplyHandler extends TicketHandler {
                 setMessageID(success.getIdLong());
             },
             failure -> {
-                Modmail.INSTANCE.getLogger().error("Failed to send ticket reply confirmation for user %d on ticket %d.", getMember().getIdLong(), getTicketID());
+                Modmail.INSTANCE.getLogger().error("Failed to send ticket reply confirmation for user {} on ticket {}.", getMember().getIdLong(), getTicketID());
                 Waiter.INSTANCE.cancel(getMember());
             });
     }
@@ -74,7 +74,7 @@ public class TicketReplyHandler extends TicketHandler {
             pst.setString(3, input);
 
             if (pst.executeUpdate() == 0) {
-                Modmail.INSTANCE.getLogger().error("Failed to insert new response by user %d on ticket %d.", getMember().getIdLong(), getTicketID());
+                Modmail.INSTANCE.getLogger().error("Failed to insert new response by user {} on ticket {}.", getMember().getIdLong(), getTicketID());
                 return false;
             }
 
@@ -85,9 +85,9 @@ public class TicketReplyHandler extends TicketHandler {
                     success -> {
                         //Do nothing.
                     },
-                    failure -> Modmail.INSTANCE.getLogger().error("Failed to send response to user %d", getTicketMember().getIdLong())
+                    failure -> Modmail.INSTANCE.getLogger().error("Failed to send response to user {}.", getTicketMember().getIdLong())
                 ),
-                failure -> Modmail.INSTANCE.getLogger().error("Failed to open private channel for user %d", getTicketMember().getIdLong())
+                failure -> Modmail.INSTANCE.getLogger().error("Failed to open private channel for user {}.", getTicketMember().getIdLong())
             );
 
             this.onTimeout();
@@ -102,10 +102,10 @@ public class TicketReplyHandler extends TicketHandler {
                 Modmail.INSTANCE.getModmailChannel().retrieveMessageById(result.getLong("message_id")).queue(
                     success -> success.editMessage(ticketEmbed).queue(),
                     failure -> {
-                        Modmail.INSTANCE.getLogger().error("Failed to retrieve message for ticket %d.", getTicketID());
+                        Modmail.INSTANCE.getLogger().error("Failed to retrieve message for ticket {}.", getTicketID());
                     });
             } else {
-                Modmail.INSTANCE.getLogger().error("Failed ot get message id for ticket %d.", getTicketID());
+                Modmail.INSTANCE.getLogger().error("Failed ot get message id for ticket {}.", getTicketID());
             }
 
             return true;

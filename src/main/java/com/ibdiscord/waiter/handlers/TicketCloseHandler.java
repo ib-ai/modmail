@@ -50,7 +50,7 @@ public class TicketCloseHandler extends TicketHandler {
                 success.addReaction(UEmoji.NO_CONFIRMATION_EMOJI).queue();
                 setMessageID(success.getIdLong());
             }, failure -> {
-                Modmail.INSTANCE.getLogger().error("Failed to send ticket close confirmation for user %d on ticket %d.", getMember().getIdLong(), getTicketID());
+                Modmail.INSTANCE.getLogger().error("Failed to send ticket close confirmation for user {} on ticket {}.", getMember().getIdLong(), getTicketID());
                 Waiter.INSTANCE.cancel(getMember());
             });
     }
@@ -80,10 +80,10 @@ public class TicketCloseHandler extends TicketHandler {
                                 message.clearReactions().queue();
                             },
                             failure -> {
-                                Modmail.INSTANCE.getLogger().error("Failed to retrieve ticket message %d.", messageId);
+                                Modmail.INSTANCE.getLogger().error("Failed to retrieve ticket message {}.", messageId);
                             });
                     } else {
-                        Modmail.INSTANCE.getLogger().error("Failed to get message id for ticket %d.", getTicketID());
+                        Modmail.INSTANCE.getLogger().error("Failed to get message id for ticket {}.", getTicketID());
                     }
 
                     //Remove Confirmation Message
@@ -91,7 +91,7 @@ public class TicketCloseHandler extends TicketHandler {
 
                     return true;
                 } else {
-                    Modmail.INSTANCE.getLogger().error("Failed to close ticket %d.", getTicketID());
+                    Modmail.INSTANCE.getLogger().error("Failed to close ticket {}.", getTicketID());
                     Modmail.INSTANCE.getModmailChannel().sendMessage("Database Error. Failed to close ticket. Message a bot dev.").queue();
                 }
             } catch (SQLException e) {

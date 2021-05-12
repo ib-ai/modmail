@@ -52,7 +52,7 @@ public class TicketTimoutHandler extends TicketHandler {
                 setMessageID(success.getIdLong());
             },
             failure -> {
-                Modmail.INSTANCE.getLogger().error("Failed to send ticket timeout confirmation for user %d on ticket %d.", getMember().getIdLong(), getTicketID());
+                Modmail.INSTANCE.getLogger().error("Failed to send ticket timeout confirmation for user {} on ticket {}.", getMember().getIdLong(), getTicketID());
                 Waiter.INSTANCE.cancel(getMember());
             });
     }
@@ -82,17 +82,17 @@ public class TicketTimoutHandler extends TicketHandler {
                                     //Do nothing
                                 },
                                 failure -> {
-                                    Modmail.INSTANCE.getLogger().error("Failed to send timeout message to user %d", getTicketMember().getIdLong());
+                                    Modmail.INSTANCE.getLogger().error("Failed to send timeout message to user {}.", getTicketMember().getIdLong());
                                 });
                         },
                         failure -> {
-                            Modmail.INSTANCE.getLogger().error("Failed to open private channel with user %d", getTicketMember().getIdLong());
+                            Modmail.INSTANCE.getLogger().error("Failed to open private channel with user {}.", getTicketMember().getIdLong());
                         });
 
                     this.onTimeout();
                     return true;
                 } else {
-                    Modmail.INSTANCE.getLogger().error("Failed ot update db with new timeout time for ticket %d.", getTicketID());
+                    Modmail.INSTANCE.getLogger().error("Failed ot update db with new timeout time for ticket {}.", getTicketID());
                     Modmail.INSTANCE.getModmailChannel().sendMessage("Database Error. Failed to set timeout time. Message a bot dev.").queue();
                 }
             } catch (SQLException e) {
