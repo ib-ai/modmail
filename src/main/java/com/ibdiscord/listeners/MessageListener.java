@@ -20,12 +20,12 @@
 package com.ibdiscord.listeners;
 
 import com.ibdiscord.Modmail;
+import com.ibdiscord.command.Command;
+import com.ibdiscord.command.CommandContext;
 import com.ibdiscord.data.db.DataContainer;
-import com.ibdiscord.utils.UEmoji;
 import com.ibdiscord.utils.UFormatter;
+import com.ibdiscord.utils.UTicket;
 import com.ibdiscord.waiter.Waiter;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
@@ -56,76 +56,11 @@ public class MessageListener extends ListenerAdapter {
         String prefix = Modmail.INSTANCE.getConfig().getBotPrefix();
         String message = event.getMessage().getContentRaw();
         if (message.startsWith(prefix)) {
-            String[] args = message.substring(1).split(" ", 2);
-            if (args.length > 0 && args[0].equalsIgnoreCase("send")) {
-                //TODO: Permission checking?
-                if (args.length > 1) {
-                    Member member = null;
-                    if (event.getMessage().getMentionedMembers().size() > 0) {
-                        member = event.getMessage().getMentionedMembers().get(0);
-                    } else {
-                        try {
-                            member = event.getGuild().getMemberByTag(args[1]);
-                        } catch (IllegalArgumentException e) {
-                            //Fuck checkstyle
-                        }
-                        if (member == null) {
-                            try {
-                                member = event.getGuild().getMemberById(args[1]);
-                            } catch (IllegalArgumentException e) {
-                                //Fuck checkstyle
-                            }
-                        }
-                    }
-
-                    if (member != null) {
-                        long userID = member.getUser().getIdLong();
-                        try (Connection con = DataContainer.INSTANCE.getConnection()) {
-                            PreparedStatement pst = con.prepareStatement("SELECT \"ticket_id\" FROM \"mm_tickets\" WHERE \"user\"=? AND \"open\"=TRUE;");
-                            pst.setLong(1, member.getUser().getIdLong());
-                            ResultSet result = pst.executeQuery();
-
-                            if (result.next()) {
-                                //Ticket already open
-                                event.getChannel().sendMessage(String.format("There is already a ticket open for %s.", member.getUser().getAsTag())).queue();
-                            } else {
-                                //Open new ticket
-                                pst = con.prepareStatement("INSERT INTO \"mm_tickets\" (\"user\")"
-                                        + "VALUES (?)"
-                                        + "RETURNING \"ticket_id\";"
-                                );
-                                pst.setLong(1, member.getUser().getIdLong());
-                                result = pst.executeQuery();
-
-                                if (!result.next()) {
-                                    Modmail.INSTANCE.getLogger().error("Failed to create new ticket for %d.", userID);
-                                    event.getChannel().sendMessage(String.format("An error occurred when creating a ticket for %s.", member.getUser().getAsTag())).queue();
-                                } else {
-                                    int ticketId = result.getInt("ticket_id");
-
-                                    //Format new ticket
-                                    MessageEmbed ticketEmbed = UFormatter.ticketEmbed(ticketId);
-                                    Modmail.INSTANCE.getModmailChannel().sendMessage(ticketEmbed).queue(
-                                        embed -> postProcessTicketEmbed(ticketId, embed),
-                                        failure -> {
-                                            Modmail.INSTANCE.getLogger().error("Failed to send ticket message for ticket %d", ticketId);
-                                            event.getChannel().sendMessage("An error occurred when sending the ticket. Please try again.").queue();
-                                        });
-                                }
-                            }
-                        } catch (SQLException e) {
-                            e.printStackTrace();
-                        }
-                    } else {
-                        event.getChannel().sendMessage("Invalid user.").queue();
-                    }
-                } else {
-                    event.getChannel().sendMessage(String.format("Usage %ssend <User>.", prefix)).queue();
-                }
-            } else {
-                event.getChannel().sendMessage("Command not recognized.").queue();
+            String commandName = message.substring(prefix.length(), message.indexOf(" "));
+            Command command = Modmail.INSTANCE.getCommandRegistry().query(commandName);
+            if (command != null) {
+                command.execute(CommandContext.construct(event.getMessage()));
             }
-
             return;
         }
 
@@ -172,28 +107,17 @@ public class MessageListener extends ListenerAdapter {
             pst.setLong(1, userID);
             result = pst.executeQuery();
 
+            int ticketId;
             long messageId = -1;
 
             if (result.next()) {
                 //If ticket already open, get current message id of ticket
+                ticketId = result.getInt("ticket_id");
                 messageId = result.getLong("message_id");
             } else {
                 //Otherwise, open new ticket
-                pst = con.prepareStatement("INSERT INTO \"mm_tickets\" (\"user\")"
-                        + "VALUES (?)"
-                        + "RETURNING \"ticket_id\";"
-                );
-                pst.setLong(1, userID);
-                result = pst.executeQuery();
-
-                if (!result.next()) {
-                    Modmail.INSTANCE.getLogger().error("Failed to create new ticket for %d.", userID);
-                    return;
-                }
+                ticketId = UTicket.openTicket(userID);
             }
-
-            //Get ticket ID
-            int ticketId = result.getInt("ticket_id");
 
             //Insert new response
             pst = con.prepareStatement("INSERT INTO \"mm_ticket_responses\" (\"ticket_id\", \"user\", \"response\", \"as_server\")"
@@ -203,7 +127,7 @@ public class MessageListener extends ListenerAdapter {
             pst.setLong(2, userID);
             pst.setString(3, response);
             if (pst.executeUpdate() == 0) {
-                Modmail.INSTANCE.getLogger().error("Failed to insert new response from %d.", userID);
+                Modmail.INSTANCE.getLogger().error("Failed to insert new response from {}.", userID);
                 return;
             }
 
@@ -216,30 +140,14 @@ public class MessageListener extends ListenerAdapter {
             //Format new ticket
             MessageEmbed ticketEmbed = UFormatter.ticketEmbed(ticketId);
             modmailChannel.sendMessage(ticketEmbed).queue(
-                message -> {
+                embed -> {
                     event.getMessage().addReaction("U+1F4E8").queue();
-                    postProcessTicketEmbed(ticketId, message);
+                    UTicket.postProcessTicketEmbed(ticketId, embed);
                 },
                 failure -> {
-                    Modmail.INSTANCE.getLogger().error("Failed to send ticket message for ticket %d", ticketId);
+                    Modmail.INSTANCE.getLogger().error("Failed to send ticket message for ticket {}", ticketId);
                     event.getChannel().sendMessage("Sorry, we encountered an error and your message wasn't sent through. Please try again.").queue();
                 });
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void postProcessTicketEmbed(int ticketId, Message message) {
-        message.addReaction(UEmoji.REPLY_TICKET_EMOJI).queue();
-        message.addReaction(UEmoji.CLOSE_TICKET_EMOJI).queue();
-        message.addReaction(UEmoji.TIMEOUT_TICKET_EMOJI).queue();
-        try (Connection con1 = DataContainer.INSTANCE.getConnection()) {
-            PreparedStatement pst1 = con1.prepareStatement("UPDATE \"mm_tickets\" SET \"message_id\"=? WHERE \"ticket_id\"=?");
-            pst1.setLong(1, message.getIdLong());
-            pst1.setLong(2, ticketId);
-            if (pst1.executeUpdate() == 0) {
-                Modmail.INSTANCE.getLogger().error("Failed to set new message id for ticket %d", ticketId);
-            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
