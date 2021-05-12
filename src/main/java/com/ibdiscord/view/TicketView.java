@@ -1,3 +1,21 @@
+/* Copyright 2021 Arraying
+ *
+ * This file is part of IB.ai.
+ *
+ * IB.ai is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * IB.ai is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with IB.ai. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.ibdiscord.view;
 
 import com.ibdiscord.data.db.DataContainer;
@@ -21,6 +39,11 @@ public class TicketView {
     private final Pagination pagination;
     int page = 1;
 
+    /**
+     * Constructor for Ticket View.
+     * @param guild The Guild
+     * @param id The ticket ID
+     */
     public TicketView(Guild guild, long id) {
         this.guild = guild;
         this.id = id;
@@ -39,6 +62,9 @@ public class TicketView {
         }
     }
 
+    /**
+     * Method to update the responses.
+     */
     public void updateResponses() {
         try (Connection con = DataContainer.INSTANCE.getConnection()) {
             pagination.clear(); // Maybe a better way to incrementally add responses.
@@ -57,6 +83,10 @@ public class TicketView {
 
     }
 
+    /**
+     * Method to render the ticket at the current page.
+     * @return Message Embed of the ticket
+     */
     public MessageEmbed render() {
         Member ticketMember = guild.getMemberById(user);
         assert ticketMember != null;
@@ -73,12 +103,18 @@ public class TicketView {
         return builder.build();
     }
 
+    /**
+     * Method to move to the previous page.
+     */
     public void pagePrevious() {
         if (page > 1) {
             page--;
         }
     }
 
+    /**
+     * Method to move to the next page.
+     */
     public void pageNext() {
         if (page < pagination.pages()) {
             page++;

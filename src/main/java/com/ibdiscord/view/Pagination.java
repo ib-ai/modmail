@@ -1,3 +1,21 @@
+/* Copyright 2021 Arraying
+ *
+ * This file is part of IB.ai.
+ *
+ * IB.ai is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * IB.ai is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with IB.ai. If not, see http://www.gnu.org/licenses/.
+ */
+
 package com.ibdiscord.view;
 
 import com.ibdiscord.utils.UFormatter;
@@ -43,11 +61,21 @@ public class Pagination {
     private final int pageSize;
     private final long owner;
 
+    /**
+     * Method to get the number of pages.
+     * @return Number of pages.
+     */
     public synchronized int pages() {
         int size = entries.size();
         return ((size - 1) / pageSize) + 1;
     }
 
+    /**
+     * Method to add a new response entry.
+     * @param user The response user's ID
+     * @param sqlStamp The response timestamp.
+     * @param response The response message.
+     */
     public synchronized void add(long user, Timestamp sqlStamp, String response) {
         String messenger;
         if (guild == null || guild.getMemberById(user) == null) {
@@ -69,6 +97,11 @@ public class Pagination {
         entries.add(field);
     }
 
+    /**
+     * Method to retrieve the responses of a page.
+     * @param page The page number.
+     * @return Iterable of MessageEmbed Fields of the entries.
+     */
     public synchronized Iterable<MessageEmbed.Field> getResponses(int page) {
         if (page < 1 || page > pages()) {
             throw new IllegalStateException("invalid page index");
@@ -79,6 +112,9 @@ public class Pagination {
         return () -> new Paginator(entries, start, length);
     }
 
+    /**
+     * Method to clear the entries.
+     */
     public synchronized void clear() {
         entries.clear();
     }
