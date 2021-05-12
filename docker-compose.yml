@@ -19,7 +19,6 @@ services:
   db:
     restart: always
     image: postgres
-    container_name: db
     env_file:
       - db.env
     volumes:
