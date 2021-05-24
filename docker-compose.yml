@@ -19,8 +19,8 @@ services:
   db:
     restart: always
     image: postgres
-    env_file:
-      - db.env
+    environment:
+      POSTGRES_PASSWORD=toor
     volumes:
       - db-data:/var/lib/postgresql/data
 
