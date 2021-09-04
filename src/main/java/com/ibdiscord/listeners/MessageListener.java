@@ -134,12 +134,6 @@ public class MessageListener extends ListenerAdapter {
             return;
         }
 
-        //TODO: Implement a proper fix
-        if (response.length() > 1000) {
-            event.getChannel().sendMessage("Your message is too long. Please shorten your message or send in multiple parts.").queue();
-            return;
-        }
-
         Waiter.INSTANCE.input(event.getMember(), response);
     }
 

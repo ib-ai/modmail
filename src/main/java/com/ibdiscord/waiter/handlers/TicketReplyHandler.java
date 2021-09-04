@@ -64,6 +64,12 @@ public class TicketReplyHandler extends TicketHandler {
             return false;
         }
 
+        //TODO: Implement a proper fix
+        if (input.length() > 1000) {
+            Modmail.INSTANCE.getModmailChannel().sendMessage("Your message is too long. Please shorten your message or send in multiple parts.").queue();
+            return false;
+        }
+
         try (Connection con = DataContainer.INSTANCE.getConnection()) {
             //Insert new response
             PreparedStatement pst = con.prepareStatement("INSERT INTO \"mm_ticket_responses\" (\"ticket_id\", \"user\", \"response\", \"as_server\")"
