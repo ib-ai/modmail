@@ -65,6 +65,18 @@ public final class UFormatter {
     }
 
     /**
+     * Formats a timeout message for user DMs.
+     * @return Message Embed
+     */
+    public static MessageEmbed untimeoutMessage() {
+        EmbedBuilder builder = new EmbedBuilder();
+
+        builder.setDescription(String.format("Your time out has been removed. You will now be able to message ModMail again."));
+
+        return builder.build();
+    }
+
+    /**
      * Formats a ticket as an embed.
      * @param ticketId Ticket
      * @return Message Embed
