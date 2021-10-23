@@ -82,13 +82,13 @@ public class MessageListener extends ListenerAdapter {
             long userID = event.getAuthor().getIdLong();
 
             //Check for timeout
-            PreparedStatement pst = con.prepareStatement("SELECT \"timeout\" FROM \"mm_tickets\" WHERE \"user\"=? ORDER BY \"timeout\" DESC;");
+            PreparedStatement pst = con.prepareStatement("SELECT \"timestamp\" FROM \"mm_timeouts\" WHERE \"user\"=?");
             pst.setLong(1, userID);
             ResultSet result = pst.executeQuery();
 
             if (result.next()) {
                 //Get latest timeout
-                Timestamp timeout = result.getTimestamp("timeout");
+                Timestamp timeout = result.getTimestamp("timestamp");
                 //Check if latest timeout is still active
                 if (LocalDateTime.now().isBefore(timeout.toLocalDateTime())) {
                     //Send message about being timed out.

@@ -20,17 +20,13 @@
 package com.ibdiscord.waiter.handlers;
 
 import com.ibdiscord.Modmail;
-import com.ibdiscord.data.db.DataContainer;
 import com.ibdiscord.utils.UEmoji;
 import com.ibdiscord.utils.UFormatter;
+import com.ibdiscord.utils.UTicket;
 import com.ibdiscord.waiter.Waiter;
 import net.dv8tion.jda.api.entities.Member;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 
 public class TicketTimoutHandler extends TicketHandler {
 
@@ -65,35 +61,11 @@ public class TicketTimoutHandler extends TicketHandler {
     @Override
     public boolean onReact(String emoji) {
         if (emoji.equalsIgnoreCase(UEmoji.YES_CONFIRMATION_EMOJI)) {
-            try (Connection con = DataContainer.INSTANCE.getConnection()) {
-                //Set timeout timestamp
-                Timestamp timeout = Timestamp.valueOf(LocalDateTime.now().plusDays(1));
-
-                //Update ticket timeout time
-                PreparedStatement pst = con.prepareStatement("UPDATE \"mm_tickets\" SET \"timeout\"=? WHERE \"ticket_id\"=?");
-                pst.setTimestamp(1, timeout);
-                pst.setLong(2, getTicketID());
-                if (pst.executeUpdate() > 0) {
-                    //TODO: Update ticket log and render new ticket
-                    getTicketMember().getUser().openPrivateChannel().queue(
-                        success -> {
-                            success.sendMessage(UFormatter.timeoutMessage(timeout)).queue(
-                                success1 -> {
-                                    //Do nothing
-                                },
-                                failure -> {
-                                    Modmail.INSTANCE.getLogger().error("Failed to send timeout message to user {}.", getTicketMember().getIdLong());
-                                });
-                        },
-                        failure -> {
-                            Modmail.INSTANCE.getLogger().error("Failed to open private channel with user {}.", getTicketMember().getIdLong());
-                        });
-
+            try {
+                boolean success = UTicket.timeoutUser(getTicketMember().getUser().getIdLong());
+                if (success) {
                     this.deleteConfirmation();
                     return true;
-                } else {
-                    Modmail.INSTANCE.getLogger().error("Failed ot update db with new timeout time for ticket {}.", getTicketID());
-                    Modmail.INSTANCE.getModmailChannel().sendMessage("Database Error. Failed to set timeout time. Message a bot dev.").queue();
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
