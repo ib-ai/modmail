@@ -19,8 +19,6 @@
 
 package com.ibdiscord.data.db;
 
-import com.ibdiscord.Modmail;
-import com.ibdiscord.data.LocalConfig;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -45,12 +43,10 @@ public enum DataContainer {
             return;
         }
 
-        LocalConfig config = Modmail.INSTANCE.getConfig();
-
         HikariConfig dbConfig = new HikariConfig();
-        dbConfig.setJdbcUrl(String.format("jdbc:postgresql://%s/%s", config.getDbIP(), config.getDbName()));
-        dbConfig.setUsername(config.getDbUsername());
-        dbConfig.setPassword(config.getDbPassword());
+        dbConfig.setJdbcUrl("jdbc:postgresql://db/modmail");
+        dbConfig.setUsername("root");
+        dbConfig.setPassword("root");
 
         dbConfig.setMaximumPoolSize(30);
         dbConfig.setLeakDetectionThreshold(2500);
@@ -87,6 +83,7 @@ public enum DataContainer {
      */
     private void initialize() {
         try (Connection con = getConnection()) {
+            //Ticket Table
             PreparedStatement pst = con.prepareStatement("CREATE TABLE IF NOT EXISTS \"mm_tickets\" ( "
                     + "\"ticket_id\" SERIAL PRIMARY KEY,"
                     + "\"user\" bigint NOT NULL,"
@@ -100,6 +97,7 @@ public enum DataContainer {
             pst = con.prepareStatement("CREATE INDEX IF NOT EXISTS \"mm_tickets_user\" ON \"mm_tickets\" (\"user\")");
             pst.execute();
 
+            //Ticket Response Table
             pst = con.prepareStatement("CREATE TABLE IF NOT EXISTS \"mm_ticket_responses\" ("
                     + "  \"response_id\" SERIAL PRIMARY KEY,"
                     + "  \"ticket_id\" int REFERENCES \"mm_tickets\","
@@ -116,6 +114,41 @@ public enum DataContainer {
 
             pst = con.prepareStatement("CREATE INDEX IF NOT EXISTS \"mm_ticket_responses_user\" ON \"mm_ticket_responses\" (\"user\")");
             pst.execute();
+
+            //Timeout Table
+            pst = con.prepareStatement("CREATE TABLE IF NOT EXISTS \"mm_timeouts\" ("
+                    + "  \"timeout_id\" SERIAL PRIMARY KEY,"
+                    + "  \"user\" bigint NOT NULL,"
+                    + "  \"timestamp\" timestamp DEFAULT Now()"
+                    + ");"
+            );
+            pst.execute();
+
+            pst = con.prepareStatement("CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS \"mm_timeouts_user\" ON \"mm_timeouts\" (\"user\")");
+            pst.execute();
+
+            pst = con.prepareStatement("ALTER TABLE \"mm_timeouts\" "
+                    + "ADD CONSTRAINT \"mm_timeouts_user\" "
+                    + "UNIQUE "
+                    + "USING INDEX \"mm_timeouts_user\""
+            );
+            pst.execute();
+
+        /*
+            //Ticket Log Table
+            pst = con.prepareStatement("CREATE TABLE IF NOT EXISTS \"mm_ticket_log\" ("
+                    + "  \"log_id\" SERIAL PRIMARY KEY,"
+                    + "  \"ticket_id\" int REFERENCES \"mm_tickets\","
+                    + "  \"user\" bigint NOT NULL,"
+                    + "  \"action\" ENUM('close', 'timeout') NOT NULL,"
+                    + "  \"timestamp\" timestamp DEFAULT Now()"
+                    + ");"
+            );
+            pst.execute();
+
+            pst = con.prepareStatement("CREATE INDEX IF NOT EXISTS \"mm_ticket_log_ticket_id\" ON \"mm_ticket_log\" (\"ticket_id\")");
+            pst.execute();
+             */
         } catch (SQLException e) {
             e.printStackTrace();
         }

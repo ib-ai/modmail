@@ -19,8 +19,10 @@ services:
   db:
     restart: always
     image: postgres
-    env_file:
-      - db.env
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=modmail
     volumes:
       - db-data:/var/lib/postgresql/data
 

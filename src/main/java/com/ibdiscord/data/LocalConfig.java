@@ -28,17 +28,11 @@ public final class LocalConfig {
 
     private final String botPrefix;
 
-    private final String dbIP;
-
-    private final String dbUsername;
-
-    private final String dbPassword;
-
-    private final String dbName;
-
     private final String guildId;
 
     private final String channelId;
+
+    private final String status;
 
     /**
      * Constructor for the local configuration object.
@@ -49,13 +43,10 @@ public final class LocalConfig {
         this.botToken = getEnvironment("TOKEN", "");
         this.botPrefix = getEnvironment("PREFIX", "]");
 
-        this.dbIP = getEnvironment("DATABASE_IP", "");
-        this.dbName = getEnvironment("DATABASE_NAME", "");
-        this.dbUsername = getEnvironment("DATABASE_USERNAME", "");
-        this.dbPassword = getEnvironment("DATABASE_PASSWORD", "");
-
         this.guildId = getEnvironment("GUILD_ID", "");
         this.channelId = getEnvironment("CHANNEL_ID", "");
+
+        this.status = getEnvironment("STATUS", "");
     }
 
     /**
