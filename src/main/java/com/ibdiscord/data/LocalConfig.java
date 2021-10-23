@@ -46,7 +46,7 @@ public final class LocalConfig {
         this.guildId = getEnvironment("GUILD_ID", "");
         this.channelId = getEnvironment("CHANNEL_ID", "");
 
-        this.status = getEnvironment("STATUS", "");
+        this.status = getEnvironment("STATUS", "DM me");
     }
 
     /**
