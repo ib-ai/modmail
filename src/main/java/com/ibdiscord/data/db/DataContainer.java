@@ -44,9 +44,9 @@ public enum DataContainer {
         }
 
         HikariConfig dbConfig = new HikariConfig();
-        dbConfig.setJdbcUrl("jdbc:postgresql://db/postgre");
-        dbConfig.setUsername("postgre");
-        dbConfig.setPassword("toor");
+        dbConfig.setJdbcUrl("jdbc:postgresql://db/modmail");
+        dbConfig.setUsername("root");
+        dbConfig.setPassword("root");
 
         dbConfig.setMaximumPoolSize(30);
         dbConfig.setLeakDetectionThreshold(2500);
@@ -116,7 +116,7 @@ public enum DataContainer {
             pst.execute();
 
             //Timeout Table
-            pst = con.prepareStatement("CREATE TABLE IF NOT EXIST \"mm_timeouts\" ("
+            pst = con.prepareStatement("CREATE TABLE IF NOT EXISTS \"mm_timeouts\" ("
                     + "  \"timeout_id\" SERIAL PRIMARY KEY,"
                     + "  \"user\" bigint NOT NULL,"
                     + "  \"timestamp\" timestamp DEFAULT Now()"
@@ -124,10 +124,17 @@ public enum DataContainer {
             );
             pst.execute();
 
-            pst = con.prepareStatement("CREATE INDEX IF NOT EXISTS \"mm_timeouts_user\" ON \"mm_timeouts\" (\"user\")");
+            pst = con.prepareStatement("CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS \"mm_timeouts_user\" ON \"mm_timeouts\" (\"user\")");
             pst.execute();
 
-            /*
+            pst = con.prepareStatement("ALTER TABLE \"mm_timeouts\" "
+                    + "ADD CONSTRAINT \"mm_timeouts_user\" "
+                    + "UNIQUE "
+                    + "USING INDEX \"mm_timeouts_user\""
+            );
+            pst.execute();
+
+        /*
             //Ticket Log Table
             pst = con.prepareStatement("CREATE TABLE IF NOT EXISTS \"mm_ticket_log\" ("
                     + "  \"log_id\" SERIAL PRIMARY KEY,"
