@@ -20,7 +20,9 @@ services:
     restart: always
     image: postgres
     environment:
-      POSTGRES_PASSWORD=toor
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=modmail
     volumes:
       - db-data:/var/lib/postgresql/data
 
