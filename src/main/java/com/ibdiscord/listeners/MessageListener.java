@@ -102,6 +102,12 @@ public class MessageListener extends ListenerAdapter {
                 return;
             }
 
+            //TODO: Implement a proper fix
+            if (response.length() > 1000) {
+                event.getChannel().sendMessage("Your message is too long. Please shorten your message or send in multiple parts.").queue();
+                return;
+            }
+
             //Get ticket info
             pst = con.prepareStatement("SELECT \"ticket_id\", \"message_id\" FROM \"mm_tickets\" WHERE \"user\"=? AND \"open\"=TRUE;");
             pst.setLong(1, userID);
