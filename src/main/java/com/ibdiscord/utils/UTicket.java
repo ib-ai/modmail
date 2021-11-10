@@ -40,26 +40,26 @@ public final class UTicket {
      * @return The ticket ID of the user.
      * @throws SQLException Database Error.
      */
-    public static int openTicket(long userID) throws  SQLException {
+    public static int openTicket(long userID) throws SQLException {
         int ticketId = getTicket(userID);
         if (ticketId > -1) {
             return ticketId;
         }
-
-        Connection con = DataContainer.INSTANCE.getConnection();
-        Modmail.INSTANCE.getLogger().info("Creating new ticket for {}.", userID);
-        PreparedStatement pst = con.prepareStatement("INSERT INTO \"mm_tickets\" (\"user\")"
+        try (Connection con = DataContainer.INSTANCE.getConnection()) {
+            Modmail.INSTANCE.getLogger().info("Creating new ticket for {}.", userID);
+            PreparedStatement pst = con.prepareStatement("INSERT INTO \"mm_tickets\" (\"user\")"
                 + "VALUES (?)"
                 + "RETURNING \"ticket_id\";"
-        );
-        pst.setLong(1, userID);
-        ResultSet result = pst.executeQuery();
+            );
+            pst.setLong(1, userID);
+            ResultSet result = pst.executeQuery();
 
-        if (result.next()) {
-            return result.getInt("ticket_id");
-        } else {
-            Modmail.INSTANCE.getLogger().error("Failed to create new ticket for {}.", userID);
-            return -1;
+            if (result.next()) {
+                return result.getInt("ticket_id");
+            } else {
+                Modmail.INSTANCE.getLogger().error("Failed to create new ticket for {}.", userID);
+                return -1;
+            }
         }
     }
 
@@ -116,15 +116,16 @@ public final class UTicket {
      * @throws SQLException Database Error.
      */
     public static int getTicket(long userId) throws SQLException {
-        Connection con = DataContainer.INSTANCE.getConnection();
-        PreparedStatement pst = con.prepareStatement("SELECT \"ticket_id\" FROM \"mm_tickets\" WHERE \"user\"=? AND \"open\"=TRUE;");
-        pst.setLong(1, userId);
-        ResultSet result = pst.executeQuery();
+        try (Connection con = DataContainer.INSTANCE.getConnection()) {
+            PreparedStatement pst = con.prepareStatement("SELECT \"ticket_id\" FROM \"mm_tickets\" WHERE \"user\"=? AND \"open\"=TRUE;");
+            pst.setLong(1, userId);
+            ResultSet result = pst.executeQuery();
 
-        if (result.next()) {
-            return result.getInt("ticket_id");
-        } else {
-            return -1;
+            if (result.next()) {
+                return result.getInt("ticket_id");
+            } else {
+                return -1;
+            }
         }
     }
 
